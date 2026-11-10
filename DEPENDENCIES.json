@@ -1,0 +1,126 @@
+{
+  "platforms": {
+    "android": {
+      "upstreamCommit": "eb5b50216e70484a009933d9519db76005f1faf3",
+      "upstream": "https://github.com/fcitx5-android/fcitx5-android.git"
+    },
+    "windows": {
+      "upstreamCommit": "f96ed24a8a535961b6ffc7160d98851a69cee4f8",
+      "upstream": "https://github.com/rime/weasel.git"
+    },
+    "rime-luna-pinyin": "56b934b099dfbeab842320f13aa8b461a6ab3e42",
+    "rime-essay": "054920de4f54c9e5994276a96a4fc2a35cb51aa3",
+    "rime-prelude": "082425ea0684bca36474415d4a0e8db9b016487e",
+    "rime-ice": "99662ba01e3affa6a0f009174ca530b887bac3b6"
+  },
+  "submodules": [
+    {
+      "path": "android/lib/fcitx5/src/main/cpp/fcitx5",
+      "url": "https://github.com/fcitx/fcitx5.git",
+      "commit": "1e00551899f9d0fa5418d899f468b6e421401adf"
+    },
+    {
+      "path": "android/lib/fcitx5/src/main/cpp/prebuilt",
+      "url": "https://github.com/fcitx5-android/prebuilt.git",
+      "commit": "3f987c60ae1485a7b2a2cf7db301726af4700f29"
+    },
+    {
+      "path": "android/lib/fcitx5-lua/src/main/cpp/fcitx5-lua",
+      "url": "https://github.com/fcitx/fcitx5-lua.git",
+      "commit": "9bf8d3dd2c6240d8e3e194d09547acbfa6a81204"
+    },
+    {
+      "path": "android/lib/libime/src/main/cpp/libime",
+      "url": "https://github.com/fcitx/libime.git",
+      "commit": "ecd23795ff7ea63a55a1b88fc4767946b999e102"
+    },
+    {
+      "path": "android/lib/fcitx5-chinese-addons/src/main/cpp/fcitx5-chinese-addons",
+      "url": "https://github.com/fcitx/fcitx5-chinese-addons.git",
+      "commit": "19f06898581419d3e4d37492f33a14e841e2680e"
+    },
+    {
+      "path": "android/plugin/anthy/src/main/cpp/anthy-cmake",
+      "url": "https://github.com/fcitx5-android/anthy-cmake.git",
+      "commit": "2fe8bfe88c034f75abc01c86ac874ae9f8be15e6"
+    },
+    {
+      "path": "android/plugin/anthy/src/main/cpp/fcitx5-anthy",
+      "url": "https://github.com/fcitx/fcitx5-anthy.git",
+      "commit": "9a7fd5142d3367ed28813eb60f8a2251294823b9"
+    },
+    {
+      "path": "android/plugin/unikey/src/main/cpp/fcitx5-unikey",
+      "url": "https://github.com/fcitx/fcitx5-unikey.git",
+      "commit": "ed9170c35c1a6275d105e03d7f9bc4f674c1469c"
+    },
+    {
+      "path": "android/plugin/rime/src/main/cpp/fcitx5-rime",
+      "url": "https://github.com/fcitx/fcitx5-rime.git",
+      "commit": "00be19a18ea5b5d1748f9fe6f6bad50f42f96781"
+    },
+    {
+      "path": "android/plugin/rime/src/main/cpp/rime-prelude",
+      "url": "https://github.com/rime/rime-prelude.git",
+      "commit": "082425ea0684bca36474415d4a0e8db9b016487e"
+    },
+    {
+      "path": "android/plugin/rime/src/main/cpp/rime-essay",
+      "url": "https://github.com/rime/rime-essay.git",
+      "commit": "054920de4f54c9e5994276a96a4fc2a35cb51aa3"
+    },
+    {
+      "path": "android/plugin/rime/src/main/cpp/rime-luna-pinyin",
+      "url": "https://github.com/rime/rime-luna-pinyin.git",
+      "commit": "56b934b099dfbeab842320f13aa8b461a6ab3e42"
+    },
+    {
+      "path": "android/plugin/rime/src/main/cpp/rime-stroke",
+      "url": "https://github.com/rime/rime-stroke.git",
+      "commit": "1e8fff9b9494ddec23b0cbc526bcfd8171a6fd48"
+    },
+    {
+      "path": "android/plugin/hangul/src/main/cpp/fcitx5-hangul",
+      "url": "https://github.com/fcitx/fcitx5-hangul.git",
+      "commit": "ede437b2d38bcc37abf382d9136f3ccbf8e16c08"
+    },
+    {
+      "path": "android/plugin/chewing/src/main/cpp/fcitx5-chewing",
+      "url": "https://github.com/fcitx/fcitx5-chewing.git",
+      "commit": "60096e8ef49df21de6c155d7a0785a58fcccb955"
+    },
+    {
+      "path": "android/plugin/sayura/src/main/cpp/fcitx5-sayura",
+      "url": "https://github.com/fcitx/fcitx5-sayura.git",
+      "commit": "a69985130b6e6d69cae461c4e400d3847879a9d9"
+    },
+    {
+      "path": "android/plugin/jyutping/src/main/cpp/libime-jyutping",
+      "url": "https://github.com/fcitx/libime-jyutping.git",
+      "commit": "6943567083f7e261ea14c470d316acacd64c7b6f"
+    },
+    {
+      "path": "android/plugin/clipboard-filter/ClearURLsRules",
+      "url": "https://github.com/ClearURLs/Rules.git",
+      "commit": "11086f40512774dcadef54079f1ba023bfacf940"
+    },
+    {
+      "path": "android/plugin/thai/src/main/cpp/fcitx5-libthai",
+      "url": "https://github.com/fcitx/fcitx5-libthai",
+      "commit": "fd10ea0a8b9f980892bd61384c5f5a56f0b8bc52"
+    },
+    {
+      "path": "windows/librime",
+      "url": "https://github.com/rime/librime.git",
+      "commit": "33e78140250125871856cdc5b42ddc6a5fcd3cd4"
+    },
+    {
+      "path": "windows/plum",
+      "url": "https://github.com/rime/plum.git",
+      "commit": "cab9ed35289f2022b6888503750d2dfb1851dbe0"
+    }
+  ],
+  "windowsRimeRelease": "33e7814",
+  "windowsBoost": "1.84.0",
+  "windowsRimeSourceCommit": "33e78140250125871856cdc5b42ddc6a5fcd3cd4"
+}

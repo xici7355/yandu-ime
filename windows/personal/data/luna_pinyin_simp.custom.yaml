@@ -1,0 +1,15 @@
+patch:
+  schema/name: 言渡全拼
+  schema/icon: icons/state-zh.ico
+  schema/ascii_icon: icons/state-en.ico
+  schema/dependencies: []
+  translator/dictionary: yandu_pinyin
+  translator/user_dict: luna_pinyin
+  translator/enable_word_completion: true
+  translator/enable_user_dict: true
+  translator/enable_sentence: true
+  translator/enable_completion: true
+  engine/translators:
+    - punct_translator
+    - table_translator@custom_phrase
+    - script_translator

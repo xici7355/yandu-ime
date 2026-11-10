@@ -1,0 +1,5 @@
+patch:
+  style/color_scheme: yandu_light
+  style/color_scheme_dark: yandu_dark
+  style/horizontal: true
+  style/inline_preedit: true

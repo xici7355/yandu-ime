@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Generated debug resValues also apply to the test APK, whose resource table is separate. -->
+    <item name="ic_launcher_debug" type="mipmap">@android:drawable/sym_def_app_icon</item>
+    <item name="ic_launcher_round_debug" type="mipmap">@android:drawable/sym_def_app_icon</item>
+</resources>

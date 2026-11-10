@@ -1,0 +1,7 @@
+patch:
+  schema/dependencies: []
+  engine/translators:
+    - punct_translator
+    - table_translator@custom_phrase
+    - script_translator
+  recognizer/patterns/reverse_lookup: "^$"

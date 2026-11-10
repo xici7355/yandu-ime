@@ -1,0 +1,83 @@
+[submodule "android/lib/fcitx5/src/main/cpp/fcitx5"]
+	path = android/lib/fcitx5/src/main/cpp/fcitx5
+	url = https://github.com/fcitx/fcitx5.git
+
+[submodule "android/lib/fcitx5/src/main/cpp/prebuilt"]
+	path = android/lib/fcitx5/src/main/cpp/prebuilt
+	url = https://github.com/fcitx5-android/prebuilt.git
+
+[submodule "android/lib/fcitx5-lua/src/main/cpp/fcitx5-lua"]
+	path = android/lib/fcitx5-lua/src/main/cpp/fcitx5-lua
+	url = https://github.com/fcitx/fcitx5-lua.git
+
+[submodule "android/lib/libime/src/main/cpp/libime"]
+	path = android/lib/libime/src/main/cpp/libime
+	url = https://github.com/fcitx/libime.git
+
+[submodule "android/lib/fcitx5-chinese-addons/src/main/cpp/fcitx5-chinese-addons"]
+	path = android/lib/fcitx5-chinese-addons/src/main/cpp/fcitx5-chinese-addons
+	url = https://github.com/fcitx/fcitx5-chinese-addons.git
+
+[submodule "android/plugin/anthy/src/main/cpp/anthy-cmake"]
+	path = android/plugin/anthy/src/main/cpp/anthy-cmake
+	url = https://github.com/fcitx5-android/anthy-cmake.git
+
+[submodule "android/plugin/anthy/src/main/cpp/fcitx5-anthy"]
+	path = android/plugin/anthy/src/main/cpp/fcitx5-anthy
+	url = https://github.com/fcitx/fcitx5-anthy.git
+
+[submodule "android/plugin/unikey/src/main/cpp/fcitx5-unikey"]
+	path = android/plugin/unikey/src/main/cpp/fcitx5-unikey
+	url = https://github.com/fcitx/fcitx5-unikey.git
+
+[submodule "android/plugin/rime/src/main/cpp/fcitx5-rime"]
+	path = android/plugin/rime/src/main/cpp/fcitx5-rime
+	url = https://github.com/fcitx/fcitx5-rime.git
+
+[submodule "android/plugin/rime/src/main/cpp/rime-prelude"]
+	path = android/plugin/rime/src/main/cpp/rime-prelude
+	url = https://github.com/rime/rime-prelude.git
+
+[submodule "android/plugin/rime/src/main/cpp/rime-essay"]
+	path = android/plugin/rime/src/main/cpp/rime-essay
+	url = https://github.com/rime/rime-essay.git
+
+[submodule "android/plugin/rime/src/main/cpp/rime-luna-pinyin"]
+	path = android/plugin/rime/src/main/cpp/rime-luna-pinyin
+	url = https://github.com/rime/rime-luna-pinyin.git
+
+[submodule "android/plugin/rime/src/main/cpp/rime-stroke"]
+	path = android/plugin/rime/src/main/cpp/rime-stroke
+	url = https://github.com/rime/rime-stroke.git
+
+[submodule "android/plugin/hangul/src/main/cpp/fcitx5-hangul"]
+	path = android/plugin/hangul/src/main/cpp/fcitx5-hangul
+	url = https://github.com/fcitx/fcitx5-hangul.git
+
+[submodule "android/plugin/chewing/src/main/cpp/fcitx5-chewing"]
+	path = android/plugin/chewing/src/main/cpp/fcitx5-chewing
+	url = https://github.com/fcitx/fcitx5-chewing.git
+
+[submodule "android/plugin/sayura/src/main/cpp/fcitx5-sayura"]
+	path = android/plugin/sayura/src/main/cpp/fcitx5-sayura
+	url = https://github.com/fcitx/fcitx5-sayura.git
+
+[submodule "android/plugin/jyutping/src/main/cpp/libime-jyutping"]
+	path = android/plugin/jyutping/src/main/cpp/libime-jyutping
+	url = https://github.com/fcitx/libime-jyutping.git
+
+[submodule "android/plugin/clipboard-filter/ClearURLsRules"]
+	path = android/plugin/clipboard-filter/ClearURLsRules
+	url = https://github.com/ClearURLs/Rules.git
+
+[submodule "android/plugin/thai/src/main/cpp/fcitx5-libthai"]
+	path = android/plugin/thai/src/main/cpp/fcitx5-libthai
+	url = https://github.com/fcitx/fcitx5-libthai
+
+[submodule "windows/librime"]
+	path = windows/librime
+	url = https://github.com/rime/librime.git
+
+[submodule "windows/plum"]
+	path = windows/plum
+	url = https://github.com/rime/plum.git
