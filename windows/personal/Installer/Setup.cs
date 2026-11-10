@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Drawing;
 using System.IO;
 using System.IO.Compression;
@@ -33,7 +33,7 @@ class Setup : Form {
   Text="安装言渡输入法";Icon=PersonalIme.Brand.Icon;ClientSize=new Size(600,510);AutoScaleMode=AutoScaleMode.Dpi;Font=new Font("Microsoft YaHei UI",10);BackColor=PersonalIme.Palette.Background;ForeColor=PersonalIme.Palette.Text;FormBorderStyle=FormBorderStyle.FixedSingle;MaximizeBox=false;StartPosition=FormStartPosition.CenterScreen;
   Controls.Add(new PictureBox{Image=PersonalIme.Brand.CreateImage(),SizeMode=PictureBoxSizeMode.Zoom,Left=36,Top=34,Width=66,Height=66});
   Controls.Add(new Label{Text="言渡输入法",Left=120,Top=36,Width=400,Height=36,Font=new Font("Microsoft YaHei UI",21,FontStyle.Bold)});
-  Controls.Add(new Label{Text="Windows · V1.0",Left=122,Top=78,Width=350,Height=24,ForeColor=PersonalIme.Palette.Secondary});
+  Controls.Add(new Label{Text="Windows · V1.1",Left=122,Top=78,Width=350,Height=24,ForeColor=PersonalIme.Palette.Secondary});
   heading.SetBounds(36,130,530,42);heading.Font=new Font("Microsoft YaHei UI",18,FontStyle.Bold);heading.Text=installed==null?"落笔此岸，言达彼岸。":"升级言渡，保留原有配置";Controls.Add(heading);
   description.SetBounds(36,185,530,55);description.ForeColor=PersonalIme.Palette.Secondary;description.Text="中文全拼  /  实时翻译  /  译文朗读\r\n"+(installed==null?"配置 AI 接口后即可翻译；未配置时正常输入中文。":"已找到现有安装，将沿用原路径并保留 API 配置和词库。");Controls.Add(description);
   locationLabel.SetBounds(36,246,528,25);locationLabel.Text=installed==null?"安装位置":"安装位置（升级沿用原路径）";Controls.Add(locationLabel);

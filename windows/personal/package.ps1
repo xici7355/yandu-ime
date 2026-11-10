@@ -10,6 +10,9 @@ foreach($name in @('weaselx64.dll','weasel.dll','WeaselServer.exe','WeaselDeploy
  if(!(Test-Path $source)){throw "缺少构建产物：$name"}
  Copy-Item $source $payload -Force
 }
+& "$PSScriptRoot/prepare-ocr.ps1"
+Copy-Item "$PSScriptRoot/bin/Ocr" "$payload/Ocr" -Recurse -Force
+foreach($name in @('msvcp140.dll','vcruntime140.dll','vcruntime140_1.dll')){Copy-Item "$PSScriptRoot/bin/$name" $payload -Force}
 Copy-Item "$PSScriptRoot/bin/PersonalTranslateIme.exe" $payload -Force
 Copy-Item "$PSScriptRoot/Assets/yandu.ico" "$payload/yandu-profile-v100.ico" -Force
 Copy-Item "$PSScriptRoot/data/weasel.yaml" "$payload/data" -Force
@@ -44,7 +47,7 @@ $compiler=Join-Path $env:WINDIR 'Microsoft.NET/Framework64/v4.0.30319/csc.exe'
 $manifest=(Get-Content "$PSScriptRoot/Agent/app.manifest" -Raw).Replace('level="asInvoker"','level="requireAdministrator"').Replace('name="PersonalTranslateIme.Agent"','name="PersonalTranslateIme.Setup"')
 $manifestPath=Join-Path $PSScriptRoot 'bin/setup.manifest'
 [IO.File]::WriteAllText($manifestPath,$manifest)
-$output=Join-Path $dist '言渡输入法-Windows-x64-1.0.0.exe'
+$output=Join-Path $dist '言渡输入法-Windows-x64-1.1.0.exe'
 $uninstallSource=(Resolve-Path "$PSScriptRoot/Installer/Uninstall.cs").Path
 & $compiler /nologo /utf8output /target:winexe /platform:x64 /optimize+ "/win32manifest:$manifestPath" "/win32icon:$PSScriptRoot/Assets/yandu.ico" "/out:$payload/Uninstall.exe" /r:System.Windows.Forms.dll $uninstallSource
 if($LASTEXITCODE){throw '卸载程序编译失败'}

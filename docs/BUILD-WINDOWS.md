@@ -1,6 +1,6 @@
 # Windows 构建
 
-当前应用版本 1.0.0。构建使用 PowerShell 7；安装脚本以带 BOM 的 UTF-8 打包，兼容 Windows PowerShell 5.1。
+当前 Windows 开发版本 1.1.0（V1.0 发布不变）。构建使用 PowerShell 7；安装脚本以带 BOM 的 UTF-8 打包，兼容 Windows PowerShell 5.1。
 
 ## 工具
 
@@ -44,3 +44,9 @@ pwsh -File personal/build.ps1 -Package
 纯逻辑/UI 测试不等于真实系统输入验证。`personal/Tests/` 包含 RichEdit、WPF、浏览器、更新和安装器专项测试。涉及系统注册的测试要在可控环境进行；真实聊天应用测试仅使用空白输入区和固定句子，不发送消息、不覆盖草稿。
 
 公开目录已进行助手编译和回归检查；完整原生构建及安装验证来自本机原开发目录的同版交付，没有声称已在全新电脑重建。
+
+## V1.1 本地 OCR
+
+运行 `personal/prepare-ocr.ps1` 准备哈希固定的 OCR 组件。构建时通过 `YANDU_VC_REDIST_DIR` 指定 `14.44.35112/x64/Microsoft.VC143.CRT` 运行库目录。安装包部署所需 CRT 到应用目录；来源与哈希记录在 `personal/ocr-dependencies.json`，不要从 System32 复制 DLL。参见 [Microsoft 的本地部署说明](https://learn.microsoft.com/en-us/cpp/windows/walkthrough-deploying-a-visual-cpp-application-to-an-application-local-folder)。
+
+`personal/build-agent.ps1 -ReadingTest` 执行实际 OCR 与独立窗口交互测试。Chrome 已安装时，可另运行 `personal/bin/ReadingTests.exe --browser` 检查隔离的本地网页，不使用已有浏览器资料。

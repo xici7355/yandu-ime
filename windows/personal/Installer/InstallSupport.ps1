@@ -39,7 +39,7 @@ function Copy-YanduPayload([string]$Source,[string]$Destination) {
  $copied=0L
  foreach($item in $items){
   $relative=$item.FullName.Substring($Source.TrimEnd('\').Length+1)
-  if($relative -in @('weasel.dll','weaselx64.dll')){$relative=[IO.Path]::GetFileNameWithoutExtension($relative)+'.1.0.0.dll'}
+  if($relative -in @('weasel.dll','weaselx64.dll')){$relative=[IO.Path]::GetFileNameWithoutExtension($relative)+'.1.1.0.dll'}
   $target=Join-Path $Destination $relative
   New-Item -ItemType Directory -Force (Split-Path $target -Parent) | Out-Null
   if((Test-Path -LiteralPath $target) -and (Get-FileHash -LiteralPath $item.FullName).Hash -eq (Get-FileHash -LiteralPath $target).Hash){$copied+=$item.Length}

@@ -11,7 +11,7 @@ class UpdateUiTest {
  static string HashConfig(){if(!File.Exists(Settings.FilePath))return "";using(var sha=SHA256.Create())return Convert.ToBase64String(sha.ComputeHash(File.ReadAllBytes(Settings.FilePath)));}
  [STAThread]static int Main(){try{Application.EnableVisualStyles();Application.SetCompatibleTextRenderingDefault(false);string before=HashConfig();var config=new Settings();using(var engine=new Translator())using(var form=new SettingsForm(config,engine,delegate{})){
   form.Show();Application.DoEvents();((Button)Find(form,"隐私")).PerformClick();Application.DoEvents();
-  Check(Find(form,"当前版本：1.0.0")!=null,"privacy shows installed application version");
+  Check(Find(form,"当前版本："+Updates.CurrentText)!=null,"privacy shows installed application version");
   Check(Find(form,"GitHub 更新仓库（地址或 用户名/仓库名）")==null,"repository text field removed");
   Check(Find(form,"更新源：言渡官方 GitHub 仓库")!=null,"official update source shown");
   var check=(Button)Find(form,"检查更新");Check(check!=null,"manual check button visible");

@@ -1,0 +1,60 @@
+{
+  "package": "Tesseract 5.2.0",
+  "dataCommit": "87416418657359cb625c412a48b6e1d6d41c29bd",
+  "downloads": [
+    {
+      "file": "tesseract.5.2.0.zip",
+      "url": "https://api.nuget.org/v3-flatcontainer/tesseract/5.2.0/tesseract.5.2.0.nupkg",
+      "sha256": "202d82fc7c7d8384df7da57206d5e1f456ccdabd648c46e67cdfaa3a911d4795"
+    },
+    {
+      "file": "tessdata/chi_sim.traineddata",
+      "url": "https://raw.githubusercontent.com/tesseract-ocr/tessdata_fast/87416418657359cb625c412a48b6e1d6d41c29bd/chi_sim.traineddata",
+      "sha256": "a5fcb6f0db1e1d6d8522f39db4e848f05984669172e584e8d76b6b3141e1f730"
+    },
+    {
+      "file": "tessdata/eng.traineddata",
+      "url": "https://raw.githubusercontent.com/tesseract-ocr/tessdata_fast/87416418657359cb625c412a48b6e1d6d41c29bd/eng.traineddata",
+      "sha256": "7d4322bd2a7749724879683fc3912cb542f19906c83bcc1a52132556427170b2"
+    },
+    {
+      "file": "licenses/tessdata-LICENSE.txt",
+      "url": "https://raw.githubusercontent.com/tesseract-ocr/tessdata_fast/87416418657359cb625c412a48b6e1d6d41c29bd/LICENSE",
+      "sha256": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30"
+    },
+    {
+      "file": "licenses/Tesseract-wrapper-LICENSE.txt",
+      "url": "https://raw.githubusercontent.com/charlesw/tesseract/5.2.0/LICENSE.txt",
+      "sha256": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30"
+    },
+    {
+      "file": "licenses/Tesseract-engine-LICENSE.txt",
+      "url": "https://raw.githubusercontent.com/tesseract-ocr/tesseract/5.2.0/LICENSE",
+      "sha256": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30"
+    },
+    {
+      "file": "licenses/leptonica-LICENSE.txt",
+      "url": "https://raw.githubusercontent.com/DanBloomberg/leptonica/1.82.0/leptonica-license.txt",
+      "sha256": "87829abb5bbb00b55a107365da89e9a33f86c4250169e5a1e5588505be7d5806"
+    }
+  ],
+  "vcRuntime": {
+    "version": "14.44.35112",
+    "source": "Visual Studio 2022 VC/Redist/MSVC/14.44.35112/x64/Microsoft.VC143.CRT",
+    "documentation": "https://learn.microsoft.com/en-us/cpp/windows/redistributing-visual-cpp-files",
+    "files": [
+      {
+        "file": "msvcp140.dll",
+        "sha256": "0f885b509a685d2bbfa652fed26b5fb31d88fbdab0a978c641d1c7b8aa460aa9"
+      },
+      {
+        "file": "vcruntime140.dll",
+        "sha256": "d5e4d9a3e835fa679450145d6a7d94e36573a509317111904d9b3712c30d9066"
+      },
+      {
+        "file": "vcruntime140_1.dll",
+        "sha256": "1f2d41c4aa5db0bc33ebf7b66d72943a817d7ce6cbe880502a9403823633093f"
+      }
+    ]
+  }
+}

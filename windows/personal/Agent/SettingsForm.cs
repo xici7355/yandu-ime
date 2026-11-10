@@ -12,6 +12,8 @@ namespace PersonalIme {
   readonly ComboBox voice=new ComboBox();
   readonly TrackBar rate=new TrackBar(),volume=new TrackBar();
   readonly CheckBox pause=new CheckBox();
+  readonly CheckBox selectionTranslation=new CheckBox();
+  public event Action ScreenTranslationRequested;
   readonly Label status=new Label();
   readonly Translator translator;
   readonly Action saved;
@@ -61,6 +63,11 @@ namespace PersonalIme {
    };
    var listen=Button(translate,"试听",155,370,100);listen.Click+=delegate {try {synth.SpeakAsyncCancelAll();synth.Rate=rate.Value;synth.Volume=volume.Value;if(voice.SelectedIndex>0)synth.SelectVoice((string)voice.SelectedItem);synth.SpeakAsync("Hello. It's nice to meet you.");}catch{status.Text="该音色暂不可用，请选择其他音色。";}};
    status.SetBounds(22,415,550,44);translate.Controls.Add(status);
+   AddText(translate,"阅读翻译",22,480,550,28,true);
+   selectionTranslation.Text="划词后显示“译”按钮，点击才发送翻译";selectionTranslation.Checked=config.SelectionTranslation;selectionTranslation.SetBounds(22,520,650,32);translate.Controls.Add(selectionTranslation);
+   AddText(translate,"划词功能读取软件公开的文字选区；密码框不读取。\r\n截屏在本机识别文字，只将识别原文发送到已配置的翻译接口。\r\n截图结果显示原文和英文，可复制，不提供朗读。",22,562,680,86,false);
+   Button(translate,"截屏翻译",22,660,150).Click+=delegate{if(ScreenTranslationRequested!=null){Close();ScreenTranslationRequested();}};
+   AddText(translate,"截图快捷键：Ctrl＋Alt＋Z。也可右键任务栏言渡图标，选择“截屏翻译”。",22,710,680,45,false);
    var privacy=Page(tabs,"隐私");
    pause.Text="暂停联网翻译，仅作普通输入法";pause.Checked=config.PauseTranslation;pause.SetBounds(22,25,550,35);privacy.Controls.Add(pause);
    AddText(privacy,"API 密钥由 Windows 当前用户加密保存。\r\n翻译原文和译文不写入诊断日志。\r\n翻译缓存仅驻留内存，最多 128 条，退出后清除。\r\n输入法词频学习由小狼毫本地管理。\r\n密码框禁用翻译；只向你配置的 AI 服务发送待译文本。",22,70,680,110,false);
@@ -103,14 +110,14 @@ namespace PersonalIme {
    Shown+=delegate{if(!config.Ready)((Button)nav.Controls[2]).PerformClick();};
    var footer=new FlowLayoutPanel{Dock=DockStyle.Fill,FlowDirection=FlowDirection.RightToLeft,Padding=new Padding(0,14,0,0)};layout.Controls.Add(footer,0,3);
    Button(footer,"保存设置",0,0,150).Click+=delegate {try {
-    Settings value=Read();config.Endpoint=value.Endpoint;config.Model=value.Model;config.ProtectedKey=value.ProtectedKey;config.Voice=value.Voice;config.SpeechRate=value.SpeechRate;config.SpeechVolume=value.SpeechVolume;config.PauseTranslation=value.PauseTranslation;
+    Settings value=Read();config.Endpoint=value.Endpoint;config.Model=value.Model;config.ProtectedKey=value.ProtectedKey;config.Voice=value.Voice;config.SpeechRate=value.SpeechRate;config.SpeechVolume=value.SpeechVolume;config.PauseTranslation=value.PauseTranslation;config.SelectionTranslation=value.SelectionTranslation;
     config.Save();saved();Close();
    }catch(Exception ex){MessageBox.Show(this,ex.Message,"请检查设置");}};
    FormClosed+=delegate{lifetime.Cancel();updates.Dispose();synth.SpeakAsyncCancelAll();synth.Dispose();};
   }
   Settings Read() {
    Settings.ChatUri(endpoint.Text);if(String.IsNullOrWhiteSpace(model.Text))throw new ArgumentException("请填写模型名称。");
-   var value=new Settings {Endpoint=endpoint.Text.Trim().TrimEnd('/'),Model=model.Text.Trim(),Voice=voice.SelectedIndex>0?(string)voice.SelectedItem:"",SpeechRate=rate.Value,SpeechVolume=volume.Value,PauseTranslation=pause.Checked};value.SetKey(key.Text);return value;
+   var value=new Settings {Endpoint=endpoint.Text.Trim().TrimEnd('/'),Model=model.Text.Trim(),Voice=voice.SelectedIndex>0?(string)voice.SelectedItem:"",SpeechRate=rate.Value,SpeechVolume=volume.Value,PauseTranslation=pause.Checked,SelectionTranslation=selectionTranslation.Checked};value.SetKey(key.Text);return value;
   }
   static Panel Page(Panel tabs,string title){var page=new SoftPanel{Tag=title,Dock=DockStyle.Fill,Visible=false,BackColor=Palette.Surface,ForeColor=Palette.Text};tabs.Controls.Add(page);return page;}
   static void LabelField(Control root,string title,TextBox box,int y){AddText(root,title,22,y,520,25,false);var surface=new SoftPanel{Left=22,Top=y+27,Width=520,Height=43,BackColor=Palette.Background};box.SetBounds(12,9,496,28);box.Font=new Font("Microsoft YaHei UI",11);box.BorderStyle=BorderStyle.None;box.BackColor=Palette.Background;box.ForeColor=Palette.Text;surface.Controls.Add(box);root.Controls.Add(surface);}

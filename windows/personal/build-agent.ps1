@@ -1,4 +1,4 @@
-﻿param([switch]$Test,[switch]$UiTest,[switch]$RaceTest,[switch]$UpdateTest,[switch]$UpdateUiTest)
+﻿param([switch]$Test,[switch]$UiTest,[switch]$RaceTest,[switch]$UpdateTest,[switch]$UpdateUiTest,[switch]$ReadingTest)
 $ErrorActionPreference='Stop'
 $root=Split-Path $PSScriptRoot -Parent
 Set-Location $root
@@ -52,4 +52,13 @@ if($UpdateUiTest){
  if($LASTEXITCODE){throw '更新界面检查编译失败'}
  & "$out/UpdateUiTest.exe"
  if($LASTEXITCODE){throw '更新界面检查失败'}
+}
+
+if($ReadingTest){
+ & "$PSScriptRoot/prepare-ocr.ps1"
+ $testSources=Get-ChildItem "$PSScriptRoot/Tests/CoreTests.cs","$PSScriptRoot/Tests/ReadingTests.cs" | ForEach-Object FullName
+ & $compiler /nologo /utf8output /target:exe /main:ReadingTests "/out:$out/ReadingTests.exe" @references @sources @testSources
+ if($LASTEXITCODE){throw 'Reading test compilation failed'}
+ & "$out/ReadingTests.exe"
+ if($LASTEXITCODE){throw 'Reading translation tests failed'}
 }

@@ -14,7 +14,7 @@ $identity=[Security.Principal.WindowsIdentity]::GetCurrent()
 $principal=New-Object Security.Principal.WindowsPrincipal($identity)
 if(!$principal.IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)){throw '请以管理员身份运行安装程序。'}
 if(!$Uninstall){
- foreach($required in @('WeaselServer.exe','PersonalTranslateIme.exe','weasel.dll','weaselx64.dll','rime.dll','Uninstall.exe')){if(!(Test-Path -LiteralPath "$PSScriptRoot/payload/$required" -PathType Leaf)){throw "安装包缺少必要文件：$required"}}
+ foreach($required in @('WeaselServer.exe','PersonalTranslateIme.exe','weasel.dll','weaselx64.dll','rime.dll','Uninstall.exe','Ocr/Tesseract.dll','Ocr/x64/tesseract50.dll','Ocr/x64/leptonica-1.82.0.dll','Ocr/tessdata/chi_sim.traineddata','Ocr/tessdata/eng.traineddata','msvcp140.dll','vcruntime140.dll','vcruntime140_1.dll')){if(!(Test-Path -LiteralPath "$PSScriptRoot/payload/$required" -PathType Leaf)){throw "安装包缺少必要文件：$required"}}
  $requiredBytes=(Get-ChildItem -LiteralPath "$PSScriptRoot/payload" -File -Recurse | Measure-Object Length -Sum).Sum
  if((New-Object IO.DriveInfo ([IO.Path]::GetPathRoot($destination))).AvailableFreeSpace -lt ($requiredBytes+20MB)){throw '安装磁盘空间不足，请释放空间后重试。'}
  Write-YanduProgress 20 '正在关闭旧版输入法服务'
@@ -34,7 +34,7 @@ if(!$Uninstall){
  }
  Write-YanduProgress 80 '正在注册 64 位输入法'
  $env:TEXTSERVICE_PROFILE='hans'
- foreach($item in @(@('System32','weaselx64.1.0.0.dll'),@('SysWOW64','weasel.1.0.0.dll'))){
+ foreach($item in @(@('System32','weaselx64.1.1.0.dll'),@('SysWOW64','weasel.1.1.0.dll'))){
   $p=Start-Process "$env:WINDIR/$($item[0])/regsvr32.exe" -ArgumentList '/s',('"'+(Join-Path $destination $item[1])+'"') -Wait -PassThru -WindowStyle Hidden
   if($p.ExitCode){throw "输入法注册失败：$($item[1])，错误 $($p.ExitCode)"}
   if($item[0] -eq 'System32'){Write-YanduProgress 86 '正在注册 32 位输入法'}
@@ -67,7 +67,7 @@ if(!$Uninstall){
  New-Item -Path $uninstallKey -Force | Out-Null
  New-ItemProperty -Path $uninstallKey -Name DisplayName -Value '言渡输入法 Windows' -PropertyType String -Force | Out-Null
  New-ItemProperty -Path $uninstallKey -Name DisplayIcon -Value ($destination+'\PersonalTranslateIme.exe,0') -PropertyType String -Force | Out-Null
- New-ItemProperty -Path $uninstallKey -Name DisplayVersion -Value '1.0.0' -PropertyType String -Force | Out-Null
+ New-ItemProperty -Path $uninstallKey -Name DisplayVersion -Value '1.1.0' -PropertyType String -Force | Out-Null
  New-ItemProperty -Path $uninstallKey -Name InstallLocation -Value $destination -PropertyType String -Force | Out-Null
  New-ItemProperty -Path $uninstallKey -Name UninstallString -Value ('"'+$destination+'\Uninstall.exe"') -PropertyType String -Force | Out-Null
  New-ItemProperty -Path $uninstallKey -Name NoModify -Value 1 -PropertyType DWord -Force | Out-Null
@@ -78,7 +78,7 @@ if(!$Uninstall){
 }else{
  if(Test-Path "$destination/WeaselServer.exe"){& "$destination/WeaselServer.exe" /q}
  Get-Process PersonalTranslateIme -ErrorAction SilentlyContinue | Where-Object {$_.Path -eq "$destination/PersonalTranslateIme.exe"} | Stop-Process
- foreach($item in @(@('System32','weaselx64.1.0.0.dll'),@('SysWOW64','weasel.1.0.0.dll'))){
+ foreach($item in @(@('System32','weaselx64.1.1.0.dll'),@('SysWOW64','weasel.1.1.0.dll'))){
   if(Test-Path "$destination/$($item[1])"){$p=Start-Process "$env:WINDIR/$($item[0])/regsvr32.exe" -ArgumentList '/u','/s',('"'+(Join-Path $destination $item[1])+'"') -Wait -PassThru -WindowStyle Hidden;if($p.ExitCode){throw '输入法注销失败，请重启后重试。'}}
  }
  $languages=Get-WinUserLanguageList;foreach($language in $languages){if($language.InputMethodTips.Contains($tip)){$language.InputMethodTips.Remove($tip)|Out-Null}};Set-WinUserLanguageList $languages -Force

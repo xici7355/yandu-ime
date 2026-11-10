@@ -15,3 +15,5 @@
 Android 上游基线与 Windows 上游基线、子模块和词库提交均记录在 DEPENDENCIES.json。子模块只记录公开上游 URL，不使用私有依赖或含令牌的地址。
 
 Windows 保留上游已跟踪的 WinSparkle 运行 DLL 和 import lib，用于正常构建与打包。它们是公开第三方依赖，不包含个人配置。
+
+Windows V1.1 增加本地 OCR：Tesseract wrapper/engine 和 tessdata_fast 使用 Apache-2.0，Leptonica 使用其 BSD 风格许可证。固定来源和 SHA-256 见 `windows/personal/ocr-dependencies.json`；构建时取回完整许可，随 `Ocr/licenses` 分发。Microsoft VC CRT 是独立的可再分发组件，按其自身许可由 VS Redist 目录提供，不受 OCR 开源许可覆盖。

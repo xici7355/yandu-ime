@@ -1,0 +1,22 @@
+言渡 Windows 截屏文字识别组件
+
+Tesseract .NET wrapper 5.2.0
+Copyright 2012-2020 Charles Weld. Apache License 2.0.
+https://github.com/charlesw/tesseract
+
+Tesseract OCR engine 5.2.0
+Apache License 2.0. https://github.com/tesseract-ocr/tesseract
+
+Leptonica 1.82.0
+Copyright (C) 2001-2020 Leptonica. BSD-style license.
+https://github.com/DanBloomberg/leptonica
+
+tessdata_fast Chinese simplified and English models
+Apache License 2.0. https://github.com/tesseract-ocr/tessdata_fast
+Pinned data commit and download checksums: Ocr/dependencies.json.
+
+Full upstream license texts are supplied alongside this notice.
+Microsoft Visual C++ runtime files are Microsoft redistributable components,
+not covered by the OCR open-source licenses. They are deployed app-locally
+from the Visual Studio 2022 x64 CRT Redist directory, without modification.
+https://learn.microsoft.com/en-us/cpp/windows/redistributing-visual-cpp-files
