@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Drawing;
 using System.Globalization;
 using System.Speech.Synthesis;
@@ -109,7 +109,7 @@ namespace PersonalIme {
   readonly SpeechSynthesizer speech=new SpeechSynthesizer();readonly NotifyIcon tray=new NotifyIcon();
   readonly System.Windows.Forms.Timer debounce=new System.Windows.Forms.Timer(),watch=new System.Windows.Forms.Timer();
   TranslationJob job;SettingsForm settingsWindow;Snapshot snapshot;
-  SelectionMonitor selectionMonitor;ReadingResult readingWindow;bool capturing;
+  SelectionMonitor selectionMonitor;bool capturing;Task<SelectedText> selectionRead;
   ScreenTranslation screenTranslation;
   bool captureHotkey;
   IntPtr previewForeground,currentTarget,pendingTarget;DateTime lastSignal,pendingUntil;
@@ -145,7 +145,7 @@ namespace PersonalIme {
    if(wechatState!=null&&!applying&&wechatRead==null&&DateTime.UtcNow>=wechatNextRead&&snapshot!=null)BeginWeChatRead(new Snapshot{Target=currentTarget,Foreground=previewForeground,Mode="text"});
   }
   internal int TranslationTimeoutMilliseconds=20000;
-  string translated="",translatedSource="",undoSource="",undoTarget="";
+  string translated="",translatedSource="",translationOrigin="",undoSource="",undoTarget="";
   IntPtr undoWindow;long pendingRevision;string pendingExpected,pendingReplacement;
   public Agent():this(Settings.Load(),new Translator(),false){}
   internal Agent(Settings settings,Translator engine,bool testing){
@@ -161,12 +161,24 @@ namespace PersonalIme {
    Shown+=delegate{Hide();if(!config.Ready)OpenSettings();};
    if(!testing){selectionMonitor=new SelectionMonitor(this,()=>config.SelectionTranslation&&!config.PauseTranslation&&!capturing,ShowSelectedTranslation);captureHotkey=Native.RegisterHotKey(Handle,1101,0x4003,(uint)Keys.Z);menu.Items[1].Text=captureHotkey?"截屏翻译（Ctrl＋Alt＋Z）":"截屏翻译（快捷键已被占用）";if(!captureHotkey)Shown+=delegate{tray.ShowBalloonTip(6000,"言渡截屏翻译","Ctrl＋Alt＋Z 已被其他软件占用，可右键言渡图标使用截屏翻译。",ToolTipIcon.Info);};}
   }
-  void ShowSelectedTranslation(SelectedText selected){ResetTranslation();ShowReading(selected.Text,null);}
-  void ShowReading(string text,Func<CancellationToken,Task<string>> ocr){if(readingWindow!=null&&!readingWindow.IsDisposed)readingWindow.Close();readingWindow=new ReadingResult(config,translator,text,ocr);readingWindow.Show();readingWindow.Activate();}
-  async void CaptureTranslation(){if(capturing)return;capturing=true;ResetTranslation();if(selectionMonitor!=null)selectionMonitor.Hide();if(readingWindow!=null&&!readingWindow.IsDisposed)readingWindow.Hide();if(screenTranslation!=null&&!screenTranslation.IsDisposed)screenTranslation.Hide();
-   try{await Task.Delay(160);if(cleaned||IsDisposed)return;var bounds=SystemInformation.VirtualScreen;using(var bitmap=CaptureOverlay.CaptureDesktop(bounds))using(var overlay=new CaptureOverlay(bitmap,bounds)){
-     if(overlay.ShowDialog()==DialogResult.OK){overlay.Captured.Dispose();if(screenTranslation!=null&&!screenTranslation.IsDisposed)screenTranslation.Close();screenTranslation=new ScreenTranslation(config,translator,new Bitmap(bitmap),bounds,overlay.ScreenRegion,value=>{config.CaptureComparison=value;try{config.Save();}catch{}});screenTranslation.Show();screenTranslation.Activate();}
-     else{if(screenTranslation!=null&&!screenTranslation.IsDisposed)screenTranslation.Show();else if(readingWindow!=null&&!readingWindow.IsDisposed)readingWindow.Show();}
+  void SaveComparison(bool value){config.CaptureComparison=value;try{config.Save();}catch{}}
+  async void ShowSelectedTranslation(SelectedText selected){
+   if(cleaned||capturing||(selectionRead!=null&&!selectionRead.IsCompleted))return;capturing=true;ResetTranslation();if(selectionMonitor!=null)selectionMonitor.Hide();
+   try{
+    await Task.Delay(100);if(cleaned||Native.GetForegroundWindow()!=selected.Foreground)return;
+    selectionRead=Task.Run(()=>SelectedText.Read(selected.Foreground,selected.Anchor));var active=selectionRead;
+    if(await Task.WhenAny(active,Task.Delay(1000))!=active||cleaned)return;
+    var current=active.Status==TaskStatus.RanToCompletion?active.Result:null;if(current==null||current.Text!=selected.Text||Native.GetForegroundWindow()!=selected.Foreground)return;
+    var bounds=SystemInformation.VirtualScreen;bool located=!current.Region.IsEmpty;var region=located?current.Region:Rectangle.Intersect(new Rectangle(current.Anchor.X,current.Anchor.Y,2,18),bounds);if(region.IsEmpty)return;
+    var image=CaptureOverlay.CaptureDesktop(bounds);
+    try{if(screenTranslation!=null&&!screenTranslation.IsDisposed)screenTranslation.Close();screenTranslation=new ScreenTranslation(config,translator,image,bounds,region,SaveComparison,null,current.Text,located);screenTranslation.Show();screenTranslation.Activate();}catch{image.Dispose();throw;}
+   }catch{if(!cleaned)MessageBox.Show("无法显示划词译文，请重新选择文字，或使用截屏翻译。","言渡划词翻译",MessageBoxButtons.OK,MessageBoxIcon.Information);}
+   finally{capturing=false;}
+  }
+  async void CaptureTranslation(){if(capturing)return;capturing=true;ResetTranslation();if(selectionMonitor!=null)selectionMonitor.Hide();if(screenTranslation!=null&&!screenTranslation.IsDisposed)screenTranslation.Hide();
+   try{await Task.Delay(160);if(cleaned||IsDisposed)return;if(await PrivacyPolicy.ProtectedFocus()){MessageBox.Show("密码框强制保护：当前处于密码输入或无法确认安全状态，未开始截屏翻译。请先切换到普通文字。","言渡隐私保护",MessageBoxButtons.OK,MessageBoxIcon.Information);return;}if(cleaned||IsDisposed)return;var bounds=SystemInformation.VirtualScreen;using(var bitmap=CaptureOverlay.CaptureDesktop(bounds))using(var overlay=new CaptureOverlay(bitmap,bounds)){
+     if(overlay.ShowDialog()==DialogResult.OK){overlay.Captured.Dispose();if(screenTranslation!=null&&!screenTranslation.IsDisposed)screenTranslation.Close();screenTranslation=new ScreenTranslation(config,translator,new Bitmap(bitmap),bounds,overlay.ScreenRegion,SaveComparison);screenTranslation.Show();screenTranslation.Activate();}
+     else{if(screenTranslation!=null&&!screenTranslation.IsDisposed)screenTranslation.Show();}
     }
    }catch{MessageBox.Show("无法截取屏幕，请退出受保护桌面后重试。","言渡截屏翻译",MessageBoxButtons.OK,MessageBoxIcon.Information);}
    finally{capturing=false;}
@@ -200,6 +212,7 @@ namespace PersonalIme {
    if(applying&&DateTime.UtcNow>pendingUntil){applying=false;panel.Hint.Text="输入框未确认替换，请检查原文";}
   }
   void Accept(Snapshot value){
+   if(PrivacyPolicy.IsSensitive(value.Source)){ResetTranslationReason("sensitive_content_blocked");return;}
    if(value.Mode=="detached"&&value.Target==currentTarget&&(wechatState!=null||wechatRead!=null)){wechatClearPending=true;return;}
    if(wechatState!=null&&value.Target==currentTarget&&value.Mode=="text"){composing=false;wechatNextRead=DateTime.MinValue;return;}
    if(value.Mode=="inactive"||value.Mode=="clear"||value.Source.Length==0&&value.Mode!="preedit"){
@@ -219,8 +232,7 @@ namespace PersonalIme {
    if(changed){if(undoWindow==value.Target&&value.Source!=undoTarget)undoWindow=IntPtr.Zero;Note("source_changed");}
    BeginWeChatRead(value);
    panel.PositionAt(value.X,value.Y);
-   if(!changed){if(panel.Visible&&translatedSource==value.Source)panel.Hint.Text=panel.Expanded?"右键收起 · 滚轮/箭头查看 · 点击替换":"点击替换原文 · 右键展开全文";return;}
-   if(!config.Ready){CancelRequest();translated=translatedSource="";panel.Hide();return;}
+   if(!changed){if(panel.Visible&&translatedSource==value.Source)panel.Hint.Text=translationOrigin+" · "+(panel.Expanded?"右键收起 · 滚轮/箭头查看 · 点击替换":"点击替换原文 · 右键展开全文");return;}
    panel.Collapse();
    StopSpeech();failed=false;translated=translatedSource="";panel.Speaker.Visible=false;
    panel.UndoAvailable=value.Target==undoWindow&&value.Source==undoTarget;panel.Original.Text=panel.UndoAvailable?undoSource:value.Source;
@@ -233,25 +245,26 @@ namespace PersonalIme {
    CancelRequest();debounce.Stop();debounce.Start();
   }
   async Task TranslateCurrent(){
-   if(snapshot==null||composing||!config.Ready)return;
+   if(snapshot==null||composing)return;
    string core,tail;Translator.SplitTail(snapshot.Source,out core,out tail);
    var active=new TranslationJob{Target=snapshot.Target,Foreground=snapshot.Foreground,Core=core,Started=DateTime.UtcNow,Deadline=DateTime.UtcNow.AddMilliseconds(TranslationTimeoutMilliseconds)};
    CancelRequest();job=active;active.Cancel.CancelAfter(TranslationTimeoutMilliseconds);
    Note("request_started");
    try{
-    string result=await translator.Translate(config,active.Core,active.Cancel.Token);
+    var report=await translator.TranslateInputDetailed(config,active.Core,active.Cancel.Token);
+    string result=report.Text;
     if(job!=active||active.Cancel.IsCancellationRequested||snapshot==null||snapshot.Target!=active.Target||previewForeground!=active.Foreground)return;
     string currentCore,currentTail;Translator.SplitTail(snapshot.Source,out currentCore,out currentTail);
     if(currentCore!=active.Core)return;
-    translated=Translator.AttachTail(result,currentTail);translatedSource=snapshot.Source;failed=false;
+    translated=Translator.AttachTail(result,currentTail);translatedSource=snapshot.Source;translationOrigin=report.Origin;failed=false;
     Note("request_completed");
-    panel.Translation.Text=translated;panel.Speaker.Visible=true;panel.Hint.Text=composing?"继续输入中 · 完成选词后可替换":"点击替换原文 · 右键展开全文";
+    panel.Translation.Text=translated;panel.Speaker.Visible=true;panel.Hint.Text=translationOrigin+" · "+(composing?"继续输入中 · 完成选词后可替换":"点击替换原文 · 右键展开全文");
    }catch(OperationCanceledException){if(job==active)ShowFailure("翻译超时，点击重试");}
-   catch(Exception ex){if(job==active)ShowFailure(ex is InvalidOperationException?ex.Message:"连接失败，点击重试");}
+   catch(Exception ex){if(job==active){if(!config.Ready||ex is SensitiveContentException){panel.Hide();translated=translatedSource=translationOrigin="";}else ShowFailure(ex is InvalidOperationException?ex.Message:"连接失败，点击重试");}}
    finally{if(job==active)job=null;active.Cancel.Dispose();}
   }
   void ShowFailure(string message){failed=true;translated=translatedSource="";Note("request_failed");panel.Speaker.Visible=false;panel.Translation.Text=message;panel.Hint.Text="原文已保留 · 点击此处重试";}
-  void Retry(){if(snapshot==null||composing||!config.Ready)return;CancelRequest();failed=false;panel.Translation.Text="正在翻译……";panel.Hint.Text="原文已保留";debounce.Stop();debounce.Start();}
+  void Retry(){if(snapshot==null||composing)return;CancelRequest();failed=false;panel.Translation.Text="正在翻译……";panel.Hint.Text="原文已保留";debounce.Stop();debounce.Start();}
   bool CanUndo(){return panel.UndoAvailable&&snapshot!=null&&snapshot.Target==undoWindow&&snapshot.Source==undoTarget;}
   void Apply(bool undo){
    Note(undo?"undo_clicked":"apply_clicked");
@@ -294,14 +307,14 @@ namespace PersonalIme {
   void Expand(){if(String.IsNullOrEmpty(translated)&&!CanUndo())return;panel.ToggleExpanded();panel.Hint.Text=CanUndo()?(panel.Expanded?"右键收起 · 再点译文撤回":"再点译文撤回 · 右键展开全文"):(panel.Expanded?"右键收起 · 滚轮/箭头查看 · 点击替换":"点击替换原文 · 右键展开全文");}
   void CancelRequest(){var old=job;job=null;if(old!=null)old.Cancel.Cancel();}
   void ResetTranslation(){ResetTranslationReason("context_cleared");}
-  void ResetTranslationReason(string reason){wechatState=null;wechatRead=null;wechatClearPending=false;if(currentTarget!=IntPtr.Zero)Note(reason);debounce.Stop();CancelRequest();snapshot=null;currentTarget=previewForeground=IntPtr.Zero;translated=translatedSource="";failed=composing=applying=false;undoWindow=IntPtr.Zero;undoSource=undoTarget="";panel.Original.Text=panel.Translation.Text=panel.Hint.Text="";panel.UndoAvailable=false;panel.Speaker.Visible=false;panel.Hide();StopSpeech();}
-  void Cleanup(){if(cleaned)return;cleaned=true;if(captureHotkey){Native.UnregisterHotKey(Handle,1101);captureHotkey=false;}if(selectionMonitor!=null)selectionMonitor.Dispose();if(readingWindow!=null&&!readingWindow.IsDisposed)readingWindow.Close();if(screenTranslation!=null&&!screenTranslation.IsDisposed)screenTranslation.Close();watch.Dispose();debounce.Dispose();CancelRequest();tray.Visible=false;tray.Dispose();speech.SpeakAsyncCancelAll();speech.Dispose();panel.Dispose();translator.Dispose();}
+  void ResetTranslationReason(string reason){wechatState=null;wechatRead=null;wechatClearPending=false;if(currentTarget!=IntPtr.Zero)Note(reason);debounce.Stop();CancelRequest();snapshot=null;currentTarget=previewForeground=IntPtr.Zero;translated=translatedSource=translationOrigin="";failed=composing=applying=false;undoWindow=IntPtr.Zero;undoSource=undoTarget="";panel.Original.Text=panel.Translation.Text=panel.Hint.Text="";panel.UndoAvailable=false;panel.Speaker.Visible=false;panel.Hide();StopSpeech();}
+  void Cleanup(){if(cleaned)return;cleaned=true;if(captureHotkey){Native.UnregisterHotKey(Handle,1101);captureHotkey=false;}if(selectionMonitor!=null)selectionMonitor.Dispose();if(screenTranslation!=null&&!screenTranslation.IsDisposed)screenTranslation.Close();watch.Dispose();debounce.Dispose();CancelRequest();tray.Visible=false;tray.Dispose();speech.SpeakAsyncCancelAll();speech.Dispose();panel.Dispose();translator.Dispose();}
   protected override void OnFormClosed(FormClosedEventArgs e){Cleanup();base.OnFormClosed(e);}
   protected override void Dispose(bool disposing){if(disposing)Cleanup();base.Dispose(disposing);}
  }
  internal static class Program {
   [STAThread] static void Main(string[] args) {
-   if(args.Length==3&&args[0]=="--ocr-worker"){Environment.ExitCode=LocalOcr.Worker(args[1],args[2]);return;}
+   if(args.Length==1&&args[0]=="--ocr-worker-stdio"){Environment.ExitCode=LocalOcr.Worker();return;}
    bool created;using(var mutex=new Mutex(true,"Local\\PersonalTranslateIme.Agent.v1",out created)) {
     if(!created){if(Array.IndexOf(args,"--diagnostics")>=0){var diagnostic=Native.FindWindow(null,"PersonalTranslateIme.Agent.v1");if(diagnostic!=IntPtr.Zero)Native.PostMessage(diagnostic,0x8000+279,IntPtr.Zero,IntPtr.Zero);}if(Array.IndexOf(args,"--settings")>=0){var window=Native.FindWindow(null,"PersonalTranslateIme.Agent.v1");if(window!=IntPtr.Zero){uint owner;Native.GetWindowThreadProcessId(window,out owner);Native.AllowSetForegroundWindow(owner);Native.PostMessage(window,0x8000+272,IntPtr.Zero,IntPtr.Zero);}}return;}System.Net.ServicePointManager.SecurityProtocol=System.Net.SecurityProtocolType.Tls12;
     Native.SetProcessDPIAware();Application.EnableVisualStyles();Application.SetCompatibleTextRenderingDefault(false);var agent=new Agent();if(Array.IndexOf(args,"--settings")>=0)agent.Shown+=delegate{Native.PostMessage(agent.Handle,0x8000+272,IntPtr.Zero,IntPtr.Zero);};Application.Run(agent);

@@ -26,13 +26,15 @@ class ReadingTests {
  [DllImport("user32.dll")]static extern bool EnumWindows(WindowVisitor visitor,IntPtr data);
  [DllImport("user32.dll",CharSet=CharSet.Unicode)]static extern int GetWindowText(IntPtr window,System.Text.StringBuilder text,int count);
  [STAThread]static int Main(string[] args){
-  if(args.Length==3&&args[0]=="--ocr-worker")return LocalOcr.Worker(args[1],args[2]);
+  if(args.Length==1&&args[0]=="--ocr-worker-stdio")return LocalOcr.Worker();
   if(args.Length==1&&args[0]=="--selection-host"){Native.SetProcessDPIAware();Application.EnableVisualStyles();Application.Run(new Fixture());return 0;}
   try{Native.SetProcessDPIAware();Application.EnableVisualStyles();if(args.Length==1&&args[0]=="--browser")Browser();else Run(args.Length==1&&args[0]=="--no-desktop");Console.WriteLine("OK "+checks+" reading-translation checks");return 0;}catch(Exception ex){Console.WriteLine("FAIL "+ex);return 1;}
  }
  static void Run(bool skipDesktop=false){
   Check(!ReadingPolicy.ValidText("   ")&&!ReadingPolicy.ValidText(new string('a',12001)),"empty and oversized text rejected");
   Check(ReadingPolicy.ValidText("你好，世界"),"selected Chinese text accepted");
+  var textBounds=ReadingPolicy.TextBounds(new[]{new System.Windows.Rect(-40,25,80,20),new System.Windows.Rect(0,47,100,20)},new Rectangle(-100,0,600,400));Check(textBounds==Rectangle.FromLTRB(-42,23,102,69),"multi-line selection bounds preserve negative origin and text margins");
+  Check(ReadingPolicy.TextBounds(new[]{new System.Windows.Rect(800,0,100,20)},new Rectangle(0,0,600,400)).IsEmpty,"offscreen selection does not create a false cover region");
   var r=ReadingPolicy.Selection(new Point(500,400),new Point(-300,-200),new Rectangle(-1920,-1080,3840,2160));Check(r==new Rectangle(-300,-200,800,600),"reverse drag and negative monitor coordinates");
   Check(!ReadingPolicy.ValidCapture(new Rectangle(0,0,0,50))&&!ReadingPolicy.ValidCapture(new Rectangle(0,0,6000,5000)),"empty and excessive captures rejected");
   Capture();Hotkey();Ocr();Results();if(!skipDesktop)Selection();else Console.WriteLine("SKIP repeated selection-focus fixture; UIA path unchanged and independently verified");
@@ -65,27 +67,25 @@ class ReadingTests {
   var folder=Path.Combine(Settings.Folder,"CaptureTemp");Check(!Directory.Exists(folder)||Directory.GetDirectories(folder).Length==0,"temporary capture files removed after success and cancellation");
  }
  static void Results(){
-  var config=new Settings();config.SetKey("fixture-only-key");var handler=new MockHandler();using(var engine=new Translator(handler))using(var result=new ReadingResult(config,engine,"你好",null)){
-   result.Show();Until(()=>Field<TextBox>(result,"translation").Text.Length>0,3000);Check(handler.Calls==1,"explicit result action makes one translation request");
-   Check(Field<TextBox>(result,"original").Text=="你好"&&Field<TextBox>(result,"translation").Text=="Hello.","original and English shown separately");
-   Check(Field<Button>(result,"copyOriginal").Enabled&&Field<Button>(result,"copyTranslation").Enabled,"copy actions enabled after translation");
-   var copy=Field<Button>(result,"copyTranslation");Check(copy.Bottom<=copy.Parent.ClientSize.Height,"copy buttons fit the footer without clipping");
-   Check(!All(result).Any(c=>c.Text=="朗读"||c.Text=="暂停"),"result contains no speech control");
-   using(var picture=new Bitmap(result.Width,result.Height)){result.DrawToBitmap(picture,new Rectangle(Point.Empty,result.Size));picture.Save(Path.Combine(AppDomain.CurrentDomain.BaseDirectory,"reading-result.png"));}result.Close();
+  var bounds=SystemInformation.VirtualScreen;var work=Screen.PrimaryScreen.WorkingArea;var region=new Rectangle(work.Left+180,work.Top+220,280,32);var config=new Settings();config.SetKey("fixture-only-key");var handler=new MockHandler();int ocrCalls=0;
+  using(var engine=new Translator(handler))using(var result=new ScreenTranslation(config,engine,new Bitmap(bounds.Width,bounds.Height),bounds,region,null,token=>{ocrCalls++;return Task.FromResult("wrong OCR");},"你好")){
+   result.Show();Until(()=>Field<bool>(result,"ready"),3000);Check(handler.Calls==1&&ocrCalls==0,"selected text translates directly without OCR");Check(result.Text=="言渡 · 划词翻译"&&!result.ShowInTaskbar&&result.FormBorderStyle==FormBorderStyle.None,"selection uses borderless anchored surface");
+   var local=region;local.Offset(-bounds.Left,-bounds.Top);Check(Field<Panel>(result,"card").Bounds==local,"selection translation covers original text bounds");Check(Field<TextBox>(result,"english").Height>=16,"small selected line leaves readable text height");
+   Check(Field<Button>(result,"copy").Enabled&&Field<Button>(result,"copySource").Enabled,"selection original and translation copy actions available");Check(!All(result).Any(c=>c.Text=="朗读"||c.Text=="暂停"),"selection surface contains no speech controls");result.Close();
   }
-  using(var engine=new Translator(new MockHandler()))using(var result=new ReadingResult(new Settings(),engine,"",token=>Task.FromResult("识别原文"))){result.Show();Until(()=>Field<Label>(result,"status").Text.Contains("尚未配置"),2000);Check(Field<TextBox>(result,"original").Text=="识别原文","OCR remains copyable without API");Check(!Field<TextBox>(result,"original").ReadOnly,"OCR errors can be corrected before retry");Check(!Field<Button>(result,"copyTranslation").Enabled,"failed translation cannot copy stale result");result.Close();}
-  var chineseHandler=new MockHandler{Reply="{\"choices\":[{\"message\":{\"content\":\"你好，世界。\"}}]}"};using(var engine=new Translator(chineseHandler))using(var result=new ReadingResult(config,engine,"Hello, world.",null)){
-   result.Show();Until(()=>Field<TextBox>(result,"translation").Text.Length>0,2000);Check(Field<Label>(result,"targetLabel").Text=="中文译文"&&Translator.HasChinese(Field<TextBox>(result,"translation").Text),"English selection automatically displays Chinese translation");result.Close();
+  using(var engine=new Translator(new MockHandler()))using(var result=new ScreenTranslation(new Settings(),engine,new Bitmap(bounds.Width,bounds.Height),bounds,region,null,null,"你好")){result.Show();Until(()=>Field<TextBox>(result,"english").Text.Contains("尚未配置"),2000);Check(!Field<Button>(result,"copy").Enabled&&Field<Button>(result,"copySource").Enabled,"missing API retains copyable selection without stale translation");result.Close();}
+  var chineseHandler=new MockHandler{Reply="{\"choices\":[{\"message\":{\"content\":\"你好，世界。\"}}]}"};using(var engine=new Translator(chineseHandler))using(var result=new ScreenTranslation(config,engine,new Bitmap(bounds.Width,bounds.Height),bounds,region,null,null,"Hello, world.")){
+   result.Show();Until(()=>Field<bool>(result,"ready"),2000);Check(Field<Label>(result,"status").Text.Contains("英 → 中")&&Translator.HasChinese(Field<TextBox>(result,"english").Text),"English selection automatically displays Chinese in place");result.Close();
   }
-  var slow=new DelayedHandler();using(var engine=new Translator(slow))using(var result=new ReadingResult(config,engine,"超时检查",null)){result.RequestTimeoutMilliseconds=100;result.Show();Until(()=>Field<Label>(result,"status").Text.Contains("超时"),2000);Check(slow.Canceled&&Field<Button>(result,"retry").Enabled,"request timeout cancels HTTP and permits retry");result.Close();}
-  slow=new DelayedHandler();using(var engine=new Translator(slow))using(var result=new ReadingResult(config,engine,"关闭检查",null)){result.Show();Pump(50);result.Close();Until(()=>slow.Canceled,2000);Check(slow.Canceled,"closing result cancels active HTTP request");}
+  var slow=new DelayedHandler();using(var engine=new Translator(slow))using(var result=new ScreenTranslation(config,engine,new Bitmap(bounds.Width,bounds.Height),bounds,region,null,null,"超时检查")){result.RequestTimeoutMilliseconds=100;result.Show();Until(()=>Field<TextBox>(result,"english").Text.Contains("超时"),2000);Check(slow.Canceled&&Field<Button>(result,"retry").Enabled,"selection timeout cancels HTTP and permits retry");result.Close();}
+  slow=new DelayedHandler();using(var engine=new Translator(slow))using(var result=new ScreenTranslation(config,engine,new Bitmap(bounds.Width,bounds.Height),bounds,region,null,null,"关闭检查")){result.Show();Pump(50);result.Close();Until(()=>slow.Canceled,2000);Check(slow.Canceled,"closing selection overlay cancels active HTTP");}
  }
  class DelayedHandler:System.Net.Http.HttpMessageHandler {public bool Canceled;protected override async Task<System.Net.Http.HttpResponseMessage> SendAsync(System.Net.Http.HttpRequestMessage message,CancellationToken token){try{await Task.Delay(10000,token);return new System.Net.Http.HttpResponseMessage(System.Net.HttpStatusCode.OK);}catch(OperationCanceledException){Canceled=true;throw;}}}
  static System.Collections.Generic.IEnumerable<Control> All(Control root){yield return root;foreach(Control c in root.Controls)foreach(var child in All(c))yield return child;}
  static void Selection(){
   using(var process=Process.Start(new ProcessStartInfo{FileName=Application.ExecutablePath,Arguments="--selection-host",UseShellExecute=false})){
    try{IntPtr host=IntPtr.Zero;Until(()=>{host=Native.FindWindow(null,"Yandu isolated selection fixture");return host!=IntPtr.Zero;},5000);SetForegroundWindow(host);SetCursorPos(500,165);mouse_event(2,0,0,0,UIntPtr.Zero);mouse_event(4,0,0,0,UIntPtr.Zero);Native.PostMessage(host,0x8000+700,IntPtr.Zero,IntPtr.Zero);Pump(250);Check(Native.GetForegroundWindow()==host,"selection fixture foreground verified");uint clipboard=GetClipboardSequenceNumber();
-    var read=Task.Run(()=>SelectedText.Read(host,new Point(500,250)));Until(()=>read.IsCompleted,4000);Check(read.Result!=null&&read.Result.Text=="你好，世界","UIA reads selection from separate application");Check(GetClipboardSequenceNumber()==clipboard,"selection leaves clipboard unchanged");
+    var read=Task.Run(()=>SelectedText.Read(host,new Point(500,250)));Until(()=>read.IsCompleted,4000);Check(read.Result!=null&&read.Result.Text=="你好，世界","UIA reads selection from separate application");Check(!read.Result.Region.IsEmpty&&new Rectangle(250,150,650,300).Contains(read.Result.Region),"UIA selection geometry stays inside the source editor");Check(GetClipboardSequenceNumber()==clipboard,"selection leaves clipboard unchanged");
     using(var owner=new Form()){var handle=owner.Handle;int actions=0;using(var monitor=new SelectionMonitor(owner,()=>true,value=>actions++)){
      Check(monitor.Available,"nonblocking mouse monitor registered");SetCursorPos(500,165);mouse_event(2,0,0,0,UIntPtr.Zero);mouse_event(4,0,0,0,UIntPtr.Zero);Native.PostMessage(host,0x8000+700,IntPtr.Zero,IntPtr.Zero);
      var badge=Field<TranslateBadge>(monitor,"badge");Until(()=>badge.Visible,4000);Check(actions==0,"selecting text does not send translation request");Check(Native.GetForegroundWindow()==host,"translation badge preserves source focus");
@@ -106,6 +106,7 @@ class ReadingTests {
     var rectangle=doc.Current.BoundingRectangle;var point=new Point((int)rectangle.Left+80,(int)rectangle.Top+80);SetCursorPos(point.X,point.Y);mouse_event(2,0,0,0,UIntPtr.Zero);mouse_event(4,0,0,0,UIntPtr.Zero);Pump(150);Check(Native.GetForegroundWindow()==browser,"isolated browser foreground verified");
     keybd_event(0x11,0,0,UIntPtr.Zero);keybd_event(0x41,0,0,UIntPtr.Zero);keybd_event(0x41,0,2,UIntPtr.Zero);keybd_event(0x11,0,2,UIntPtr.Zero);Pump(300);
     var selected=Task.Run(()=>SelectedText.Read(browser,point));Until(()=>selected.IsCompleted,5000);Check(selected.Result!=null&&selected.Result.Text.Contains("你好，世界")&&selected.Result.Text.Contains("Yandu"),"browser document selection available through UIA");
+    Check(!selected.Result.Region.IsEmpty&&SystemInformation.VirtualScreen.Contains(selected.Result.Region),"browser selection provides valid screen geometry for anchored translation");
     Check(!selected.Result.Text.Contains("fixture-only"),"browser selection excludes password value");
    }finally{if(browser!=IntPtr.Zero)Native.PostMessage(browser,0x10,IntPtr.Zero,IntPtr.Zero);}
   }

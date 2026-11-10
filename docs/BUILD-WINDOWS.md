@@ -52,3 +52,9 @@ pwsh -File personal/build.ps1 -Package
 `personal/build-agent.ps1 -ReadingTest` 执行实际 OCR 与独立窗口交互测试。Chrome 已安装时，可另运行 `personal/bin/ReadingTests.exe --browser` 检查隔离的本地网页，不使用已有浏览器资料。
 
 V1.1.1 原位截图结果可通过 `personal/build-agent.ps1 -ScreenTest` 检查。`-SkipCaptureMouseTest` 避免重复移动鼠标和争抢焦点，仅用于与先前独立鼠标检查结合；不表示物理选区测试已经运行。`ScreenTranslationTests.exe --live-auto` 会读取本机 API 并发送两条固定测试文字，可能产生接口费用，不用于无人值守常规测试。
+
+## V1.2 内置词典
+
+`personal/prepare-dictionary.ps1` 离线核验 Dictionary 清单中的 SHA-256 并复制到 bin。运行 `personal/build-agent.ps1 -DictionaryTest` 检查真实词库、API 回退和强制隐私保护；`-UiTest` 包含无 API 的输入预览。
+
+更新公开快照时从 CC-CEDICT 官方来源取回原始 gzip，使用 `personal/Tools/build-lexicon.py --help` 查看生成参数。只允许公开源数据，不导入个人用户词库或翻译缓存。生成后提交适配数据、manifest、NOTICE 与完整许可，重跑测试后随应用发版；不添加后台收集或定时上传。

@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Diagnostics;
 using System.Drawing;
 using System.Drawing.Imaging;
@@ -16,28 +16,36 @@ namespace PersonalIme {
   public static bool ValidText(string value){return !String.IsNullOrWhiteSpace(value)&&value.Length<=MaxCharacters;}
   public static Rectangle Selection(Point a,Point b,Rectangle bounds){return Rectangle.Intersect(Rectangle.FromLTRB(Math.Min(a.X,b.X),Math.Min(a.Y,b.Y),Math.Max(a.X,b.X),Math.Max(a.Y,b.Y)),bounds);}
   public static bool ValidCapture(Rectangle r){return r.Width>=8&&r.Height>=8&&(long)r.Width*r.Height<=24000000;}
+  public static Rectangle TextBounds(System.Windows.Rect[] fragments,Rectangle desktop){
+   var result=Rectangle.Empty;if(fragments==null)return result;
+   foreach(var value in fragments){if(value.IsEmpty||Double.IsNaN(value.Left)||Double.IsNaN(value.Top)||Double.IsNaN(value.Right)||Double.IsNaN(value.Bottom)||Double.IsInfinity(value.Left)||Double.IsInfinity(value.Top)||Double.IsInfinity(value.Right)||Double.IsInfinity(value.Bottom)||value.Width<=0||value.Height<=0)continue;
+    double left=Math.Max(desktop.Left,value.Left),top=Math.Max(desktop.Top,value.Top),right=Math.Min(desktop.Right,value.Right),bottom=Math.Min(desktop.Bottom,value.Bottom);if(right<=left||bottom<=top)continue;var r=Rectangle.FromLTRB((int)Math.Floor(left),(int)Math.Floor(top),(int)Math.Ceiling(right),(int)Math.Ceiling(bottom));result=result.IsEmpty?r:Rectangle.Union(result,r);
+   }if(!result.IsEmpty){result.Inflate(2,2);result=Rectangle.Intersect(result,desktop);}return result;
+  }
  }
 
  // UIA reads only the explicit selection. No Ctrl+C simulation or clipboard polling.
  internal sealed class SelectedText {
-  public string Text;public IntPtr Foreground;public Point Anchor;
+  public string Text;public IntPtr Foreground;public Point Anchor;public Rectangle Region;
   public static SelectedText Read(IntPtr window,Point point){
    try {
     if(window==IntPtr.Zero||Native.GetForegroundWindow()!=window)return null;
     uint pid;Native.GetWindowThreadProcessId(window,out pid);if(pid==(uint)Process.GetCurrentProcess().Id)return null;
-    var element=AutomationElement.FocusedElement;if(element!=null&&element.Current.IsPassword)return null;
-    var selected=ReadElement(element,pid);
-    if(selected==null){element=AutomationElement.FromPoint(new System.Windows.Point(point.X,point.Y));for(int i=0;i<6&&element!=null&&selected==null;i++){selected=ReadElement(element,pid);element=TreeWalker.ControlViewWalker.GetParent(element);}}
+    var element=AutomationElement.FocusedElement;if(PrivacyPolicy.ProtectedElement(element))return null;
+    Rectangle region;var selected=ReadElement(element,pid,out region);
+    if(selected==null){element=AutomationElement.FromPoint(new System.Windows.Point(point.X,point.Y));for(int i=0;i<6&&element!=null&&selected==null;i++){selected=ReadElement(element,pid,out region);if(selected==null)element=TreeWalker.ControlViewWalker.GetParent(element);}}
     if(selected==null||Native.GetForegroundWindow()!=window)return null;
-    return new SelectedText{Text=selected,Foreground=window,Anchor=point};
+    return new SelectedText{Text=selected,Foreground=window,Anchor=point,Region=region};
    }catch{return null;}
   }
-  static string ReadElement(AutomationElement element,uint pid){
-   if(element==null||element.Current.ProcessId!=pid||element.Current.IsPassword)return null;
+  static string ReadElement(AutomationElement element,uint pid,out Rectangle region){
+   region=Rectangle.Empty;
+   if(element==null||element.Current.ProcessId!=pid||PrivacyPolicy.ProtectedElement(element))return null;
    object pattern;if(!element.TryGetCurrentPattern(TextPattern.Pattern,out pattern))return null;
    var ranges=((TextPattern)pattern).GetSelection();if(ranges.Length!=1)return null;
    var value=ranges[0].GetText(ReadingPolicy.MaxCharacters+1);
-   return ReadingPolicy.ValidText(value)?value:null;
+   if(ReadingPolicy.ValidText(value))try{region=ReadingPolicy.TextBounds(ranges[0].GetBoundingRectangles(),SystemInformation.VirtualScreen);}catch{}
+   return ReadingPolicy.ValidText(value)&&!PrivacyPolicy.IsSensitive(value)?value:null;
   }
  }
 
@@ -79,58 +87,34 @@ namespace PersonalIme {
   public static Bitmap CaptureDesktop(Rectangle bounds){if((long)bounds.Width*bounds.Height>100000000)throw new InvalidOperationException("屏幕区域过大，请暂时减少屏幕数量后重试。");var image=new Bitmap(bounds.Width,bounds.Height,PixelFormat.Format24bppRgb);try{using(var g=Graphics.FromImage(image))g.CopyFromScreen(bounds.Location,Point.Empty,bounds.Size,CopyPixelOperation.SourceCopy);return image;}catch{image.Dispose();throw;}}
  }
 
- internal sealed class ReadingResult : Form {
-  readonly Settings config;readonly Translator translator;readonly Func<CancellationToken,Task<string>> recognize;
-  readonly CancellationTokenSource lifetime=new CancellationTokenSource();CancellationTokenSource request;
-  readonly TextBox original=new TextBox(),translation=new TextBox();readonly Label status=new Label(),targetLabel=new Label();readonly Button retry=new SoftButton(),copyOriginal=new SoftButton(),copyTranslation=new SoftButton();
-  internal int RequestTimeoutMilliseconds=35000;
-  public ReadingResult(Settings settings,Translator engine,string text,Func<CancellationToken,Task<string>> ocr){
-   config=settings;translator=engine;recognize=ocr;Text=ocr==null?"言渡 · 划词翻译":"言渡 · 截屏翻译";Icon=Brand.Icon;StartPosition=FormStartPosition.CenterScreen;Size=new Size(780,650);MinimumSize=new Size(560,480);BackColor=Palette.Background;ForeColor=Palette.Text;Font=new Font("Microsoft YaHei UI",10);
-   var layout=new TableLayoutPanel{Dock=DockStyle.Fill,Padding=new Padding(24),ColumnCount=1,RowCount=7};layout.ColumnStyles.Add(new ColumnStyle(SizeType.Percent,100));foreach(var h in new[]{48f,28f,0f,28f,0f,60f,48f})layout.RowStyles.Add(new RowStyle(h==0?SizeType.Percent:SizeType.Absolute,h==0?50:h));Controls.Add(layout);
-   var heading=new Label{Text=Text,Font=new Font(Font.FontFamily,17,FontStyle.Bold),Dock=DockStyle.Fill,ForeColor=Palette.Text};layout.Controls.Add(heading,0,0);layout.Controls.Add(new Label{Text=ocr==null?"原文":"识别原文（可修正后重新翻译）",Dock=DockStyle.Fill},0,1);
-   Configure(original);original.ReadOnly=ocr==null;original.Text=text??"";layout.Controls.Add(original,0,2);targetLabel.Text=Translator.ReadingTargetChinese(original.Text)?"中文译文":"英文译文";targetLabel.Dock=DockStyle.Fill;targetLabel.Padding=new Padding(0,6,0,0);layout.Controls.Add(targetLabel,0,3);Configure(translation);translation.ReadOnly=true;layout.Controls.Add(translation,0,4);
-   var footer=new FlowLayoutPanel{Dock=DockStyle.Fill,Padding=new Padding(0,10,0,0),WrapContents=true};layout.Controls.Add(footer,0,5);
-   retry.Text="重新翻译";copyOriginal.Text="复制原文";copyTranslation.Text="复制译文";foreach(var button in new[]{retry,copyOriginal,copyTranslation}){button.Size=new Size(115,34);button.BackColor=Color.FromArgb(174,255,50);button.ForeColor=Color.Black;footer.Controls.Add(button);}status.Dock=DockStyle.Fill;status.ForeColor=Palette.Secondary;layout.Controls.Add(status,0,6);
-   copyOriginal.Click+=delegate{Copy(original.Text);};copyTranslation.Click+=delegate{Copy(translation.Text);};retry.Click+=async delegate{await Run(false);};Shown+=async delegate{await Run(recognize!=null);};FormClosed+=delegate{lifetime.Cancel();if(request!=null)request.Cancel();};
-  }
-  void Configure(TextBox box){box.Multiline=true;box.ScrollBars=ScrollBars.Vertical;box.Dock=DockStyle.Fill;box.BackColor=Palette.Surface;box.ForeColor=Palette.Text;box.BorderStyle=BorderStyle.FixedSingle;box.Font=new Font("Microsoft YaHei UI",11);box.MaxLength=ReadingPolicy.MaxCharacters;}
-  void Copy(string value){if(String.IsNullOrEmpty(value))return;try{Clipboard.SetText(value);status.Text="已复制";}catch(ExternalException){status.Text="剪贴板正忙，请重试。";}}
-  async Task Run(bool withOcr){
-   if(request!=null)return;var active=CancellationTokenSource.CreateLinkedTokenSource(lifetime.Token);request=active;active.CancelAfter(RequestTimeoutMilliseconds);retry.Enabled=copyTranslation.Enabled=false;translation.Text="";
-   try{if(withOcr){status.Text="正在本机识别文字……";original.Text=await recognize(active.Token);}
-    active.Token.ThrowIfCancellationRequested();if(!ReadingPolicy.ValidText(original.Text))throw new InvalidOperationException(String.IsNullOrWhiteSpace(original.Text)?"没有识别到文字，请重新框选清晰的文字区域。":"文字超过 12000 字，请缩小范围。");
-    if(!config.Ready)throw new InvalidOperationException("翻译已暂停或尚未配置 API，请在言渡设置的翻译页配置。原文仍可复制。");
-    targetLabel.Text=Translator.ReadingTargetChinese(original.Text)?"中文译文":"英文译文";status.Text=Translator.ReadingTargetChinese(original.Text)?"英 → 中 · 正在翻译……":"中 → 英 · 正在翻译……";var result=await translator.TranslateReading(config,original.Text,active.Token);active.Token.ThrowIfCancellationRequested();if(!IsDisposed){translation.Text=result;status.Text="翻译完成";copyTranslation.Enabled=true;}
-   }catch(OperationCanceledException){if(!IsDisposed)status.Text="操作已取消或超时，可重试。";}
-   catch(Exception ex){if(!IsDisposed)status.Text=ex is System.Net.Http.HttpRequestException?"无法连接翻译接口，请检查网络后重试。":ex.Message;}
-   finally{request=null;active.Dispose();if(!IsDisposed)retry.Enabled=true;}
-  }
- }
-
  internal static class LocalOcr {
   public static async Task<string> Recognize(Bitmap image,CancellationToken token){
-   string folder=Path.Combine(Settings.Folder,"CaptureTemp",Guid.NewGuid().ToString("N"));string input=Path.Combine(folder,"capture.png"),output=Path.Combine(folder,"text.txt");
-   try{using(image){token.ThrowIfCancellationRequested();Directory.CreateDirectory(folder);SaveCapture(image,input);}using(var process=Process.Start(new ProcessStartInfo{FileName=Application.ExecutablePath,Arguments="--ocr-worker \""+input+"\" \""+output+"\"",UseShellExecute=false,CreateNoWindow=true,WindowStyle=ProcessWindowStyle.Hidden})){
-     try{while(!process.HasExited){await Task.Delay(100,token);}token.ThrowIfCancellationRequested();if(process.ExitCode!=0||!File.Exists(output))throw new InvalidOperationException("本机文字识别失败，请重新框选；如仍失败请重新安装完整安装包。");return File.ReadAllText(output,System.Text.Encoding.UTF8).Trim();}
-     finally{try{if(!process.HasExited){process.Kill();process.WaitForExit(2000);}}catch{}}
+   byte[] png;using(image)using(var memory=new MemoryStream()){token.ThrowIfCancellationRequested();SaveCapture(image,memory);png=memory.ToArray();}
+   try{using(var process=Process.Start(new ProcessStartInfo{FileName=Application.ExecutablePath,Arguments="--ocr-worker-stdio",UseShellExecute=false,CreateNoWindow=true,WindowStyle=ProcessWindowStyle.Hidden,RedirectStandardInput=true,RedirectStandardOutput=true,RedirectStandardError=true,StandardOutputEncoding=System.Text.Encoding.UTF8,StandardErrorEncoding=System.Text.Encoding.UTF8})){
+     var output=process.StandardOutput.ReadToEndAsync();var errors=process.StandardError.ReadToEndAsync();
+     try{await process.StandardInput.BaseStream.WriteAsync(png,0,png.Length,token);process.StandardInput.Close();while(!process.HasExited)await Task.Delay(50,token);token.ThrowIfCancellationRequested();var reply=await output;await errors;
+      const string prefix="YANDU_OCR_1|";if(process.ExitCode!=0||reply.Length>2000000||!reply.StartsWith(prefix,StringComparison.Ordinal))throw new InvalidOperationException("本机文字识别失败，请重新框选清晰文字；图片没有写入临时文件。");
+      return System.Text.Encoding.UTF8.GetString(Convert.FromBase64String(reply.Substring(prefix.Length))).Trim();
+     }finally{try{if(!process.HasExited){process.Kill();process.WaitForExit(2000);}}catch{}}
     }
-   }finally{try{Directory.Delete(folder,true);}catch{}}
+   }finally{Array.Clear(png,0,png.Length);}
   }
-  static void SaveCapture(Bitmap source,string path){
-   // Enlarge ordinary screen text before OCR, while bounding worker memory.
-   if((long)source.Width*source.Height<=2000000){using(var scaled=new Bitmap(source.Width*2,source.Height*2,PixelFormat.Format24bppRgb)){using(var graphics=Graphics.FromImage(scaled)){graphics.InterpolationMode=System.Drawing.Drawing2D.InterpolationMode.HighQualityBicubic;graphics.DrawImage(source,new Rectangle(0,0,scaled.Width,scaled.Height));}scaled.Save(path,ImageFormat.Png);}}
-   else source.Save(path,ImageFormat.Png);
+  static void SaveCapture(Bitmap source,Stream output){
+   if((long)source.Width*source.Height<=2000000){using(var scaled=new Bitmap(source.Width*2,source.Height*2,PixelFormat.Format24bppRgb)){using(var graphics=Graphics.FromImage(scaled)){graphics.InterpolationMode=System.Drawing.Drawing2D.InterpolationMode.HighQualityBicubic;graphics.DrawImage(source,new Rectangle(0,0,scaled.Width,scaled.Height));}scaled.Save(output,ImageFormat.Png);}}
+   else source.Save(output,ImageFormat.Png);
   }
-  // Separate worker bounds OCR failures and cancellation; it never uses the network.
-  public static int Worker(string input,string output){
-   try{var root=Path.Combine(AppDomain.CurrentDomain.BaseDirectory,"Ocr");var assembly=Assembly.LoadFrom(Path.Combine(root,"Tesseract.dll"));assembly.GetType("Tesseract.TesseractEnviornment",true).GetProperty("CustomSearchPath").SetValue(null,root,null);
-    var engineType=assembly.GetType("Tesseract.TesseractEngine",true);var pixType=assembly.GetType("Tesseract.Pix",true);var modeType=assembly.GetType("Tesseract.EngineMode",true);var pageMode=assembly.GetType("Tesseract.PageSegMode",true);
-    using(var engine=(IDisposable)Activator.CreateInstance(engineType,new object[]{Path.Combine(root,"tessdata"),"chi_sim+eng",Enum.Parse(modeType,"LstmOnly")}))
-    using(var pix=(IDisposable)pixType.GetMethod("LoadFromMemory").Invoke(null,new object[]{File.ReadAllBytes(input)})){
-     var process=engineType.GetMethod("Process",new[]{pixType,typeof(Nullable<>).MakeGenericType(pageMode)});
-     string text="";foreach(var layout in new[]{"Auto","SparseText","SingleLine"}){using(var page=(IDisposable)process.Invoke(engine,new object[]{pix,Enum.Parse(pageMode,layout)})){text=(string)page.GetType().GetMethod("GetText").Invoke(page,null);}if(!String.IsNullOrWhiteSpace(text))break;}File.WriteAllText(output,text,new System.Text.UTF8Encoding(false));
-    }return 0;
-   }catch{return 2;}
+  // The worker uses stdin/stdout only; capture pixels and OCR text never touch disk.
+  public static int Worker(){byte[] bytes=null;try{
+   using(var memory=new MemoryStream()){var input=Console.OpenStandardInput();var buffer=new byte[65536];int count;while((count=input.Read(buffer,0,buffer.Length))>0){if(memory.Length+count>100L*1024*1024)return 2;memory.Write(buffer,0,count);}bytes=memory.ToArray();}
+   string text=ReadPixels(bytes);byte[] reply=System.Text.Encoding.ASCII.GetBytes("YANDU_OCR_1|"+Convert.ToBase64String(System.Text.Encoding.UTF8.GetBytes(text)));using(var output=Console.OpenStandardOutput()){output.Write(reply,0,reply.Length);output.Flush();}return 0;
+  }catch{return 2;}finally{if(bytes!=null)Array.Clear(bytes,0,bytes.Length);}}
+  static string ReadPixels(byte[] input){var root=Path.Combine(AppDomain.CurrentDomain.BaseDirectory,"Ocr");var assembly=Assembly.LoadFrom(Path.Combine(root,"Tesseract.dll"));assembly.GetType("Tesseract.TesseractEnviornment",true).GetProperty("CustomSearchPath").SetValue(null,root,null);
+   var engineType=assembly.GetType("Tesseract.TesseractEngine",true);var pixType=assembly.GetType("Tesseract.Pix",true);var modeType=assembly.GetType("Tesseract.EngineMode",true);var pageMode=assembly.GetType("Tesseract.PageSegMode",true);
+   using(var engine=(IDisposable)Activator.CreateInstance(engineType,new object[]{Path.Combine(root,"tessdata"),"chi_sim+eng",Enum.Parse(modeType,"LstmOnly")}))
+   using(var pix=(IDisposable)pixType.GetMethod("LoadFromMemory").Invoke(null,new object[]{input})){
+    var flag=engineType.GetMethod("SetVariable",new[]{typeof(string),typeof(bool)});if(flag!=null){flag.Invoke(engine,new object[]{"tessedit_write_images",false});flag.Invoke(engine,new object[]{"classify_enable_learning",false});}
+    var process=engineType.GetMethod("Process",new[]{pixType,typeof(Nullable<>).MakeGenericType(pageMode)});string text="";foreach(var layout in new[]{"Auto","SparseText","SingleLine"}){using(var page=(IDisposable)process.Invoke(engine,new object[]{pix,Enum.Parse(pageMode,layout)})){text=(string)page.GetType().GetMethod("GetText").Invoke(page,null);}if(!String.IsNullOrWhiteSpace(text))break;}return text;
+   }
   }
  }
 }

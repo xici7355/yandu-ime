@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Drawing;
 using System.Reflection;
 using System.Threading;
@@ -11,11 +11,12 @@ class Endpoint : NativeWindow {
  protected override void WndProc(ref Message m){if(m.Msg==Native.WM_COPYDATA){string s=Native.Read(m.LParam);if(s!=null&&s.StartsWith("R|")){int n=s.IndexOf('\n');var fields=s.Substring(0,n).Split('|');long rev=Int64.Parse(fields[1]);int count=Int32.Parse(fields[2]);string expected=s.Substring(n+1,count);Replacement=s.Substring(n+1+count);bool ok=rev==Revision&&expected==Source;if(ok){Source=Replacement;Writes++;Revision++;}Native.Send(m.WParam,Handle,"A|"+rev+"|"+(ok?"1":"0"));m.Result=new IntPtr(1);return;}}base.WndProc(ref m);}
 }
 class UiTests {
- static int checks;static void Check(bool b,string title){if(!b)throw new Exception(title);Console.WriteLine("PASS "+title);checks++;}
+ static Form fixtureHost;static int checks;static void Check(bool b,string title){if(!b){Console.WriteLine("FAIL "+title);throw new Exception(title);}Console.WriteLine("PASS "+title);checks++;}
  static object Field(object o,string field){return o.GetType().GetField(field,BindingFlags.Instance|BindingFlags.NonPublic).GetValue(o);}
  static void Call(object o,string method,params object[] args){o.GetType().GetMethod(method,BindingFlags.Instance|BindingFlags.NonPublic).Invoke(o,args);}
  static void Pump(int ms){var until=DateTime.UtcNow.AddMilliseconds(ms);while(DateTime.UtcNow<until){Application.DoEvents();Thread.Sleep(5);}}
- [STAThread]static void Main(){Application.EnableVisualStyles();var config=new Settings();config.SetKey("sk-ui-fixture");var handler=new MockHandler();using(var engine=new Translator(handler))using(var agent=new Agent(config,engine,true)){
+ [STAThread]static void Main(){try{Run();}catch(Exception error){Console.WriteLine("FAIL "+error.GetType().Name+": "+error.Message);Environment.ExitCode=1;}finally{if(fixtureHost!=null)fixtureHost.Dispose();}}
+ static void Run(){Application.EnableVisualStyles();fixtureHost=new Form{Text="Yandu isolated input regression",StartPosition=FormStartPosition.CenterScreen,Width=500,Height=180,TopMost=true};fixtureHost.Controls.Add(new Label{Dock=DockStyle.Fill,Text="固定输入状态验证，不发送消息",TextAlign=ContentAlignment.MiddleCenter});fixtureHost.Show();fixtureHost.Activate();Pump(150);var config=new Settings();config.SetKey("sk-ui-fixture");var handler=new MockHandler();using(var engine=new Translator(handler))using(var agent=new Agent(config,engine,true)){
   var endpoint=new Endpoint();endpoint.Publish(agent.Handle);Pump(750);
   Check((string)Field(agent,"translated")=="Hello.","live preview");Check(handler.Calls==1,"debounce one request");
   endpoint.Revision++;endpoint.Publish(agent.Handle);Pump(100);
@@ -33,6 +34,7 @@ class UiTests {
   config.PauseTranslation=true;endpoint.Source="新的文字";endpoint.Revision++;endpoint.Publish(agent.Handle);Pump(650);Check(!((PanelForm)Field(agent,"panel")).Visible,"privacy hides preview");Check(handler.Calls==1,"privacy no request");
   endpoint.DestroyHandle();
  }
+ OfflineInput();
  InlineExpansion();
  var settings=new Settings();using(var engine=new Translator(new MockHandler()))using(var form=new SettingsForm(settings,engine,delegate{})){
   form.Show();Pump(100);var layout=(TableLayoutPanel)form.Controls[0];var tabs=(Panel)layout.GetControlFromPosition(0,2);Check(tabs.Controls.Count==4,"four settings categories");
@@ -43,6 +45,12 @@ class UiTests {
   form.Close();
  }
  Console.WriteLine("OK "+checks+" UI checks");}
+ static void OfflineInput(){var handler=new MockHandler();var dictionary=new LocalDictionary(System.IO.Path.Combine(AppDomain.CurrentDomain.BaseDirectory,"Dictionary"));using(var engine=new Translator(handler,dictionary))using(var agent=new Agent(new Settings(),engine,true)){
+  var endpoint=new Endpoint();endpoint.Source="输入法";endpoint.Publish(agent.Handle);Pump(1300);var panel=(PanelForm)Field(agent,"panel");Check(((string)Field(agent,"translated")).Contains("input method")&&panel.Visible&&handler.Calls==0,"input preview uses real dictionary without API");Check(panel.Hint.Text.Contains("本地词典"),"input preview identifies local origin");
+  endpoint.Source="输入法，";endpoint.Revision++;endpoint.Publish(agent.Handle);Pump(700);Check(((string)Field(agent,"translated")).EndsWith(",")&&handler.Calls==0,"offline input terminal punctuation stays local");
+  endpoint.Source="这段文字没有完整的词典匹配项";endpoint.Revision++;endpoint.Publish(agent.Handle);Pump(700);Check(!panel.Visible&&handler.Calls==0,"offline dictionary miss leaves ordinary input without error card");
+  endpoint.Source="password=fixture";endpoint.Revision++;endpoint.Publish(agent.Handle);Pump(80);Check(!panel.Visible&&Field(agent,"snapshot")==null&&handler.Calls==0,"sensitive input clears preview before translation");endpoint.DestroyHandle();
+ }}
  static void InlineExpansion(){using(var engine=new Translator(new MockHandler()))using(var agent=new Agent(new Settings(),engine,true)){
   var panel=(PanelForm)Field(agent,"panel");var text="This translation stays beside the input field. Right-click to expand the remaining lines without opening another window. The keyboard focus stays in the original editor, and clicking the translation still replaces the matching source. ";
   typeof(Agent).GetField("translated",BindingFlags.NonPublic|BindingFlags.Instance).SetValue(agent,text);panel.Translation.Text=text;panel.PositionAt(100,100);panel.ShowPassive();Pump(50);

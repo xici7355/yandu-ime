@@ -1,0 +1,16 @@
+{
+  "name": "CC-CEDICT",
+  "publisher": "MDBG / CC-CEDICT contributors",
+  "license": "CC-BY-SA-4.0",
+  "sourceUrl": "https://www.mdbg.net/chinese/export/cedict/cedict_1_0_ts_utf-8_mdbg.txt.gz",
+  "sourcePage": "https://www.mdbg.net/chinese/dictionary?page=cc-cedict",
+  "sourceDate": "2026-11-10T08:36:22Z",
+  "sourceEntries": 125403,
+  "sourceSha256": "4dae08102569239a0d2b95984df49a05e3191ebfa4206b1a66fbbeaa6db734e4",
+  "englishTargetKeys": 187340,
+  "chineseTargetKeys": 103052,
+  "dataSha256": "4b5976c01f4461264a38c02144701242e3adc468eb828af3803e4dcb1b420471",
+  "dataBytes": 4315138,
+  "format": 1,
+  "adaptation": "Normalized exact word/phrase indexes; references and classifier-only definitions omitted; reverse index and limited common-meaning priorities added. No user content or AI results."
+}

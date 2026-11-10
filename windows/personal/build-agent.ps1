@@ -1,4 +1,4 @@
-﻿param([switch]$Test,[switch]$UiTest,[switch]$RaceTest,[switch]$UpdateTest,[switch]$UpdateUiTest,[switch]$ReadingTest,[switch]$ScreenTest,[switch]$SkipCaptureMouseTest)
+﻿param([switch]$Test,[switch]$UiTest,[switch]$RaceTest,[switch]$UpdateTest,[switch]$UpdateUiTest,[switch]$ReadingTest,[switch]$ScreenTest,[switch]$SkipCaptureMouseTest,[switch]$DictionaryTest)
 $ErrorActionPreference='Stop'
 $root=Split-Path $PSScriptRoot -Parent
 Set-Location $root
@@ -7,6 +7,7 @@ $speech=(Get-ChildItem "$env:WINDIR/Microsoft.NET/assembly/GAC_MSIL/System.Speec
 if(!$speech){throw '需要 Windows .NET Framework 4.x 的 System.Speech 组件。'}
 $out=Join-Path $PSScriptRoot 'bin'
 New-Item -ItemType Directory -Force $out | Out-Null
+& "$PSScriptRoot/prepare-dictionary.ps1"
 $references=@('/r:System.Windows.Forms.dll','/r:System.Drawing.dll',"/r:$speech",'/r:System.Net.Http.dll','/r:System.Web.Extensions.dll','/r:System.Security.dll')
 $references+=@("/r:$env:WINDIR/Microsoft.NET/Framework64/v4.0.30319/WPF/UIAutomationClient.dll","/r:$env:WINDIR/Microsoft.NET/Framework64/v4.0.30319/WPF/UIAutomationTypes.dll","/r:$env:WINDIR/Microsoft.NET/Framework64/v4.0.30319/WPF/WindowsBase.dll")
 $references+=@("/resource:$PSScriptRoot/Assets/yandu.png,yandu.png","/resource:$PSScriptRoot/Assets/yandu.ico,yandu.ico","/win32icon:$PSScriptRoot/Assets/yandu.ico")
@@ -69,4 +70,13 @@ if($ScreenTest){
  if($LASTEXITCODE){throw 'Screenshot overlay tests compilation failed'}
  if($SkipCaptureMouseTest){& "$out/ScreenTranslationTests.exe" --no-mouse}else{& "$out/ScreenTranslationTests.exe"}
  if($LASTEXITCODE){throw 'Screenshot overlay tests failed'}
+}
+
+if($DictionaryTest){
+ & "$PSScriptRoot/prepare-dictionary.ps1"
+ $tests=(Resolve-Path "$PSScriptRoot/Tests/DictionaryPrivacyTests.cs").Path
+ & $compiler /nologo /utf8output /target:exe /main:DictionaryPrivacyTests "/out:$out/DictionaryPrivacyTests.exe" @references @sources $tests
+ if($LASTEXITCODE){throw 'Dictionary privacy tests compilation failed'}
+ & "$out/DictionaryPrivacyTests.exe"
+ if($LASTEXITCODE){throw 'Dictionary privacy tests failed'}
 }

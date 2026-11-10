@@ -37,7 +37,7 @@ namespace PersonalIme {
    readingGeneration=-1;pending=Task.Run(()=>SelectedText.Read(captured.Foreground,captured.Anchor));var active=pending;
    // A broken accessibility provider cannot block the keyboard or create unbounded workers.
    if(await Task.WhenAny(active,Task.Delay(1000))!=active)return;if(disposed)return;pending=null;
-   if(active.Status==TaskStatus.RanToCompletion&&active.Result!=null&&active.Result.Text==captured.Text&&Native.GetForegroundWindow()==captured.Foreground)translate(captured);
+   if(active.Status==TaskStatus.RanToCompletion&&active.Result!=null&&active.Result.Text==captured.Text&&Native.GetForegroundWindow()==captured.Foreground)translate(active.Result);
   }
   public void Hide(){selection=null;badge.Hide();}
   public void Dispose(){if(disposed)return;disposed=true;timer.Dispose();if(hook!=IntPtr.Zero){UnhookWindowsHookEx(hook);hook=IntPtr.Zero;}badge.Dispose();}

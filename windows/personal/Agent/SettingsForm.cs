@@ -68,9 +68,11 @@ namespace PersonalIme {
    AddText(translate,"截图与划词自动中英互译；密码框不读取。\r\n截屏在本机识别，默认原位覆盖译文，对照开关可保留原图。\r\n只将待译文字发送到配置的接口；截图可复制，不提供朗读。",22,562,680,86,false);
    Button(translate,"截屏翻译",22,660,150).Click+=delegate{if(ScreenTranslationRequested!=null){Close();ScreenTranslationRequested();}};
    AddText(translate,"截图快捷键：Ctrl＋Alt＋Z。也可右键任务栏言渡图标，选择“截屏翻译”。",22,710,680,45,false);
+   AddText(translate,"本地词典优先",22,780,550,28,true);
+   AddText(translate,LocalDictionary.Description()+"\r\n完整命中单词或短语时本地返回，未命中再请求 AI。\r\n多义词可点“AI精译”；词库随版本更新，不采集个人词汇。",22,822,680,100,false);
    var privacy=Page(tabs,"隐私");
-   pause.Text="暂停联网翻译，仅作普通输入法";pause.Checked=config.PauseTranslation;pause.SetBounds(22,25,550,35);privacy.Controls.Add(pause);
-   AddText(privacy,"API 密钥由 Windows 当前用户加密保存。\r\n翻译原文和译文不写入诊断日志。\r\n翻译缓存仅驻留内存，最多 128 条，退出后清除。\r\n输入法词频学习由小狼毫本地管理。\r\n密码框禁用翻译；只向你配置的 AI 服务发送待译文本。",22,70,680,110,false);
+   pause.Text="暂停 AI 联网翻译，保留本地词典查询";pause.Checked=config.PauseTranslation;pause.SetBounds(22,25,550,35);privacy.Controls.Add(pause);
+   AddText(privacy,"强制密码保护不可关闭；敏感凭据不发送、不缓存。\r\n不上传用户词库或缓存，不收集输入内容用于改进或训练。\r\n缓存仅在内存，退出即清空；截图识别不生成临时文件。\r\nAPI 密钥加密保存在本机。联网仅发送本次普通待译文字。\r\n第三方 API 的留存规则由其服务商决定。",22,70,680,110,false);
    Button(privacy,"清空翻译缓存",22,195,170).Click+=delegate {translator.Clear();MessageBox.Show(this,"翻译缓存已清空。");};
    AddText(privacy,"版本与更新",22,250,550,30,true);
    AddText(privacy,"当前版本："+Updates.CurrentText,22,290,550,25,false);

@@ -21,7 +21,7 @@ namespace PersonalIme {
    var name=Process.GetProcessById((int)pid).ProcessName;
    if(name!="Weixin"&&name!="WeChat")return null;
    var focused=AutomationElement.FocusedElement;
-   if(focused==null||focused.Current.ProcessId!=pid||focused.Current.ClassName!="mmui::ChatInputField"||focused.Current.IsPassword)return null;
+   if(focused==null||focused.Current.ProcessId!=pid||focused.Current.ClassName!="mmui::ChatInputField"||PrivacyPolicy.ProtectedElement(focused))return null;
    return focused;
   }
   static bool EndSelection(AutomationElement editor) {
@@ -35,7 +35,7 @@ namespace PersonalIme {
     var id=editor.GetRuntimeId();if(identity!=null&&!identity.SequenceEqual(id))return null;
     object p;if(!editor.TryGetCurrentPattern(ValuePattern.Pattern,out p)||!EndSelection(editor))return null;
     var value=(ValuePattern)p;if(value.Current.IsReadOnly)return null;
-    var text=value.Current.Value??"";if(text.Length>12000)return null;
+    var text=value.Current.Value??"";if(text.Length>12000||PrivacyPolicy.IsSensitive(text))return null;
     var r=editor.Current.BoundingRectangle;
     return new State{Foreground=foreground,Identity=id,Text=text,X=(int)r.Left,Y=(int)r.Bottom};
    }catch{return null;}
