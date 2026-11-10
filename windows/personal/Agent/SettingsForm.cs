@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Drawing;
 using System.Diagnostics;
 using System.IO;
@@ -18,23 +18,22 @@ namespace PersonalIme {
   readonly CancellationTokenSource lifetime = new CancellationTokenSource();
   readonly SpeechSynthesizer synth=new SpeechSynthesizer();
   readonly Updates updates=new Updates();
-  readonly TextBox updateRepository=new TextBox();
   readonly Label updateStatus=new Label();
   ReleaseInfo availableRelease;
   public SettingsForm(Settings settings,Translator engine,Action onSaved) {
    config=settings;translator=engine;saved=onSaved;
    Text="言渡输入法 · 设置";Icon=Brand.Icon; Font=new Font("Microsoft YaHei UI",10); Size=new Size(810,790); MinimumSize=new Size(810,790); StartPosition=FormStartPosition.CenterScreen;AutoScaleMode=AutoScaleMode.Dpi;
    BackColor=Palette.Background; ForeColor=Palette.Text;
-   var layout=new TableLayoutPanel{Dock=DockStyle.Fill,ColumnCount=2,RowCount=3,Padding=new Padding(24)};
-   layout.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute,138));layout.ColumnStyles.Add(new ColumnStyle(SizeType.Percent,100));
-   layout.RowStyles.Add(new RowStyle(SizeType.Absolute,108));layout.RowStyles.Add(new RowStyle(SizeType.Percent,100));layout.RowStyles.Add(new RowStyle(SizeType.Absolute,64));Controls.Add(layout);
+   var layout=new TableLayoutPanel{Dock=DockStyle.Fill,ColumnCount=1,RowCount=4,Padding=new Padding(24)};
+   layout.ColumnStyles.Add(new ColumnStyle(SizeType.Percent,100));
+   layout.RowStyles.Add(new RowStyle(SizeType.Absolute,108));layout.RowStyles.Add(new RowStyle(SizeType.Absolute,64));layout.RowStyles.Add(new RowStyle(SizeType.Percent,100));layout.RowStyles.Add(new RowStyle(SizeType.Absolute,64));Controls.Add(layout);
    var introduction=new Panel{Dock=DockStyle.Fill};
    introduction.Controls.Add(new PictureBox{Image=Brand.CreateImage(),SizeMode=PictureBoxSizeMode.Zoom,Left=0,Top=0,Width=64,Height=64});
    introduction.Controls.Add(new Label{Text="言渡输入法",Font=new Font("Microsoft YaHei UI",18),ForeColor=Palette.Text,AutoSize=true,Left=80,Top=4});
    introduction.Controls.Add(new Label{Text="落笔此岸，言达彼岸。",Font=new Font("Microsoft YaHei UI",10),ForeColor=Palette.Secondary,AutoSize=true,Left=81,Top=43});
-   layout.Controls.Add(introduction,0,0);layout.SetColumnSpan(introduction,2);
-   var nav=new FlowLayoutPanel{Dock=DockStyle.Fill,WrapContents=false,FlowDirection=FlowDirection.TopDown,Padding=new Padding(4,16,4,0)};layout.Controls.Add(nav,0,1);
-   var tabs=new Panel {Dock=DockStyle.Fill,BackColor=Palette.Surface};layout.Controls.Add(tabs,1,1);
+   layout.Controls.Add(introduction,0,0);layout.SetColumnSpan(introduction,1);
+   var nav=new FlowLayoutPanel{Dock=DockStyle.Fill,WrapContents=false,FlowDirection=FlowDirection.LeftToRight,Padding=new Padding(0,4,0,4)};layout.Controls.Add(nav,0,1);
+   var tabs=new Panel {Dock=DockStyle.Fill,BackColor=Palette.Surface};layout.Controls.Add(tabs,0,2);
    var keyboard=Page(tabs,"键盘");
    AddText(keyboard,"中文输入",22,20,550,28,true);
    AddText(keyboard,"全拼中文＋英文。通过 Win＋空格切换输入法，Shift 切换中英文。\r\n支持整句组合，本地学习已选词句并调整候选排序。",22,60,540,65,false);
@@ -53,8 +52,8 @@ namespace PersonalIme {
    voice.SelectedIndex=0; if(voice.Items.Contains(config.Voice)) voice.SelectedItem=config.Voice; translate.Controls.Add(voice);
    AddText(translate,"语速",22,315,60,25,false);rate.SetBounds(85,310,205,45);rate.Minimum=-5;rate.Maximum=5;rate.Value=Math.Max(-5,Math.Min(5,config.SpeechRate));translate.Controls.Add(rate);
    AddText(translate,"音量",315,315,60,25,false);volume.SetBounds(370,310,205,45);volume.Minimum=0;volume.Maximum=100;volume.Value=Math.Max(0,Math.Min(100,config.SpeechVolume));translate.Controls.Add(volume);
-   var test=Button(translate,"测试接口",22,370,120);test.Click+=async delegate {
-    try {var temporary=Read();test.Enabled=false;status.Text="正在测试……";
+   var test=Button(translate,"验证连接",22,370,120);test.Click+=async delegate {
+    try {var temporary=Read();test.Enabled=false;status.Text="正在验证连接……";
      string result=await translator.Translate(temporary,"你好，很高兴认识你。",lifetime.Token);status.Text=result;
     } catch(OperationCanceledException) { if(!IsDisposed) status.Text="请求已取消或超时。"; }
     catch(Exception ex) {if(!IsDisposed) status.Text=ex is System.Net.Http.HttpRequestException ? "连接失败，请检查网络和接口地址。" : ex.Message;}
@@ -68,31 +67,28 @@ namespace PersonalIme {
    Button(privacy,"清空翻译缓存",22,285,170).Click+=delegate {translator.Clear();MessageBox.Show(this,"翻译缓存已清空。");};
    AddText(privacy,"版本与更新",22,350,550,30,true);
    AddText(privacy,"当前版本："+Updates.CurrentText,22,393,550,25,false);
-   LabelField(privacy,"GitHub 更新仓库（地址或 用户名/仓库名）",updateRepository,432);updateRepository.Text=config.UpdateRepository??"";
-   AddText(privacy,"尚未创建仓库可先留空。仅手动检查正式发布版，不发送输入内容或 API 密钥。",22,510,520,50,false);
-   var checkUpdate=Button(privacy,"检查更新",22,575,135);
-   var downloadUpdate=Button(privacy,"下载并更新",171,575,145);downloadUpdate.Enabled=false;
-   var releasePage=Button(privacy,"查看发布页",330,575,145);releasePage.Enabled=false;
-   updateStatus.SetBounds(22,631,520,85);updateStatus.ForeColor=Palette.Text;privacy.Controls.Add(updateStatus);
-   updateRepository.TextChanged+=delegate{availableRelease=null;downloadUpdate.Enabled=releasePage.Enabled=false;updateStatus.Text="更新源已改变，请重新检查。";};
+   AddText(privacy,"更新源：言渡官方 GitHub 仓库",22,432,550,26,false);
+   AddText(privacy,"手动检查正式版本。下载后校验文件，确认后安装，保留原路径和 API 配置。",22,470,550,50,false);
+   var checkUpdate=Button(privacy,"检查更新",22,540,135);
+   var downloadUpdate=Button(privacy,"下载并更新",171,540,145);downloadUpdate.Enabled=false;
+   var releasePage=Button(privacy,"查看发布页",330,540,145);releasePage.Enabled=true;
+   updateStatus.SetBounds(22,596,550,85);updateStatus.ForeColor=Palette.Text;privacy.Controls.Add(updateStatus);
    checkUpdate.Click+=async delegate{
     try{
-     string repository=Updates.Repository(updateRepository.Text);if(repository.Length==0){updateStatus.Text="请先填写 GitHub 更新仓库。";return;}
-     updateRepository.Enabled=checkUpdate.Enabled=downloadUpdate.Enabled=releasePage.Enabled=false;availableRelease=null;updateStatus.Text="正在检查 GitHub 正式发布版本……";
-     config.UpdateRepository=repository;config.Save();
-     var release=await updates.Check(repository,lifetime.Token);if(IsDisposed)return;availableRelease=release;releasePage.Enabled=true;
+     checkUpdate.Enabled=downloadUpdate.Enabled=releasePage.Enabled=false;availableRelease=null;updateStatus.Text="正在检查 GitHub 正式发布版本……";
+     var release=await updates.Check(lifetime.Token);if(IsDisposed)return;availableRelease=release;releasePage.Enabled=true;
      if(release.Version<=Updates.CurrentVersion){updateStatus.Text="当前已是最新版本（"+Updates.CurrentText+"）。";return;}
      updateStatus.Text="发现新版 "+release.tag_name+(release.Installer==null?"，维护者尚未上传 Windows 安装包。":"，可下载后确认安装。");downloadUpdate.Enabled=release.Installer!=null;
     }catch(OperationCanceledException){if(!IsDisposed)updateStatus.Text="检查已取消或超时，请稍后重试。";}
     catch(Exception ex){if(!IsDisposed)updateStatus.Text=ex is System.Net.Http.HttpRequestException?"无法连接 GitHub，请检查网络后重试。":ex.Message;}
-    finally{if(!IsDisposed)updateRepository.Enabled=checkUpdate.Enabled=true;}
+    finally{if(!IsDisposed)checkUpdate.Enabled=true;}
    };
-   releasePage.Click+=delegate{if(availableRelease!=null)try{Process.Start(new ProcessStartInfo{FileName=availableRelease.html_url,UseShellExecute=true});}catch{updateStatus.Text="无法打开浏览器。";}};
+   releasePage.Click+=delegate{try{Process.Start(new ProcessStartInfo{FileName=availableRelease!=null?availableRelease.html_url:"https://github.com/"+Updates.OfficialRepository+"/releases",UseShellExecute=true});}catch{updateStatus.Text="无法打开浏览器。";}};
    downloadUpdate.Click+=async delegate{
     if(availableRelease==null)return;
     string folder=Path.Combine(Settings.Folder,"Updates",Guid.NewGuid().ToString("N"));
     try{
-     updateRepository.Enabled=checkUpdate.Enabled=downloadUpdate.Enabled=releasePage.Enabled=false;
+     checkUpdate.Enabled=downloadUpdate.Enabled=releasePage.Enabled=false;
      updateStatus.Text="正在下载更新……";
      var progress=new Progress<int>(delegate(int value){if(!IsDisposed)updateStatus.Text=value+"% · 下载更新";});
      string installer=await updates.Download(availableRelease,folder,progress,lifetime.Token);if(IsDisposed)return;
@@ -100,26 +96,26 @@ namespace PersonalIme {
      if(MessageBox.Show(this,"新版已下载并校验。现在打开安装程序吗？\r\n升级会沿用原路径并保留已保存的 API 配置。", "言渡更新",MessageBoxButtons.YesNo,MessageBoxIcon.Information)==DialogResult.Yes){Process.Start(new ProcessStartInfo{FileName=installer,UseShellExecute=true});updateStatus.Text="安装程序已打开，请在其中确认升级。";}
     }catch(OperationCanceledException){if(!IsDisposed)updateStatus.Text="下载已取消或超时，请重试。";}
     catch(Exception ex){if(!IsDisposed)updateStatus.Text=ex is System.Net.Http.HttpRequestException?"下载失败，请检查 GitHub 网络连接后重试。":ex.Message;}
-    finally{if(!IsDisposed){updateRepository.Enabled=checkUpdate.Enabled=releasePage.Enabled=true;downloadUpdate.Enabled=availableRelease!=null&&availableRelease.Version>Updates.CurrentVersion&&availableRelease.Installer!=null;}}
+    finally{if(!IsDisposed){checkUpdate.Enabled=releasePage.Enabled=true;downloadUpdate.Enabled=availableRelease!=null&&availableRelease.Version>Updates.CurrentVersion&&availableRelease.Installer!=null;}}
    };
-   foreach(Panel page in tabs.Controls){page.AutoScroll=true;var navButton=new SoftButton{Text=(string)page.Tag,Font=new Font("Microsoft YaHei UI",12),Width=116,Height=48,BackColor=Palette.Background,ForeColor=Palette.Text,Margin=new Padding(0,0,8,16)};nav.Controls.Add(navButton);navButton.Click+=delegate{foreach(Control content in tabs.Controls)content.Visible=content==page;page.BringToFront();foreach(Control item in nav.Controls){item.BackColor=Palette.Background;item.ForeColor=Palette.Text;}navButton.BackColor=Color.FromArgb(230,248,209);navButton.ForeColor=Color.Black;};}
-   tabs.Controls[0].Visible=true;tabs.Controls[0].BringToFront();nav.Controls[0].BackColor=Color.FromArgb(174,255,46);nav.Controls[0].ForeColor=Color.Black;
+   foreach(Panel page in tabs.Controls){page.AutoScroll=true;var navButton=new SoftButton{Text=(string)page.Tag,Font=new Font("Microsoft YaHei UI",12),Width=160,Height=48,BackColor=Palette.Background,ForeColor=Palette.Text,Margin=new Padding(0,0,12,0)};nav.Controls.Add(navButton);navButton.Click+=delegate{foreach(Control content in tabs.Controls)content.Visible=content==page;page.BringToFront();foreach(Control item in nav.Controls){item.BackColor=Palette.Background;item.ForeColor=Palette.Text;}navButton.BackColor=Color.FromArgb(174,255,50);navButton.ForeColor=Color.Black;};}
+   tabs.Controls[0].Visible=true;tabs.Controls[0].BringToFront();nav.Controls[0].BackColor=Color.FromArgb(174,255,50);nav.Controls[0].ForeColor=Color.Black;
    Shown+=delegate{if(!config.Ready)((Button)nav.Controls[2]).PerformClick();};
-   var footer=new FlowLayoutPanel{Dock=DockStyle.Fill,FlowDirection=FlowDirection.RightToLeft,Padding=new Padding(0,14,0,0)};layout.Controls.Add(footer,1,2);
+   var footer=new FlowLayoutPanel{Dock=DockStyle.Fill,FlowDirection=FlowDirection.RightToLeft,Padding=new Padding(0,14,0,0)};layout.Controls.Add(footer,0,3);
    Button(footer,"保存设置",0,0,150).Click+=delegate {try {
-    Settings value=Read();config.Endpoint=value.Endpoint;config.Model=value.Model;config.ProtectedKey=value.ProtectedKey;config.Voice=value.Voice;config.SpeechRate=value.SpeechRate;config.SpeechVolume=value.SpeechVolume;config.PauseTranslation=value.PauseTranslation;config.UpdateRepository=value.UpdateRepository;
+    Settings value=Read();config.Endpoint=value.Endpoint;config.Model=value.Model;config.ProtectedKey=value.ProtectedKey;config.Voice=value.Voice;config.SpeechRate=value.SpeechRate;config.SpeechVolume=value.SpeechVolume;config.PauseTranslation=value.PauseTranslation;
     config.Save();saved();Close();
    }catch(Exception ex){MessageBox.Show(this,ex.Message,"请检查设置");}};
    FormClosed+=delegate{lifetime.Cancel();updates.Dispose();synth.SpeakAsyncCancelAll();synth.Dispose();};
   }
   Settings Read() {
    Settings.ChatUri(endpoint.Text);if(String.IsNullOrWhiteSpace(model.Text))throw new ArgumentException("请填写模型名称。");
-   var value=new Settings {Endpoint=endpoint.Text.Trim().TrimEnd('/'),Model=model.Text.Trim(),Voice=voice.SelectedIndex>0?(string)voice.SelectedItem:"",SpeechRate=rate.Value,SpeechVolume=volume.Value,PauseTranslation=pause.Checked,UpdateRepository=Updates.Repository(updateRepository.Text)};value.SetKey(key.Text);return value;
+   var value=new Settings {Endpoint=endpoint.Text.Trim().TrimEnd('/'),Model=model.Text.Trim(),Voice=voice.SelectedIndex>0?(string)voice.SelectedItem:"",SpeechRate=rate.Value,SpeechVolume=volume.Value,PauseTranslation=pause.Checked};value.SetKey(key.Text);return value;
   }
   static Panel Page(Panel tabs,string title){var page=new Panel{Tag=title,Dock=DockStyle.Fill,Visible=false,BackColor=Palette.Surface,ForeColor=Palette.Text};tabs.Controls.Add(page);return page;}
   static void LabelField(Control root,string title,TextBox box,int y){AddText(root,title,22,y,520,25,false);var surface=new SoftPanel{Left=22,Top=y+27,Width=520,Height=43,BackColor=Palette.Background};box.SetBounds(12,9,496,28);box.Font=new Font("Microsoft YaHei UI",11);box.BorderStyle=BorderStyle.None;box.BackColor=Palette.Background;box.ForeColor=Palette.Text;surface.Controls.Add(box);root.Controls.Add(surface);}
   static void AddText(Control root,string text,int x,int y,int w,int h,bool heading){root.Controls.Add(new Label{Text=text,Left=x,Top=y,Width=w,Height=h,ForeColor=heading?Palette.AccentText:Palette.Text,Font=new Font("Microsoft YaHei UI",heading?14:10)});}
-  static Button Button(Control root,string text,int x,int y,int width){var b=new SoftButton{Text=text,Left=x,Top=y,Width=width,Height=38,BackColor=Color.FromArgb(174,255,46),ForeColor=Color.Black};root.Controls.Add(b);return b;}
+  static Button Button(Control root,string text,int x,int y,int width){var b=new SoftButton{Text=text,Left=x,Top=y,Width=width,Height=38,BackColor=Color.FromArgb(174,255,50),ForeColor=Color.Black};root.Controls.Add(b);return b;}
  }
 }
 

@@ -62,6 +62,13 @@ class DataDescriptorPlugin : Plugin<Project> {
             excludes.set(extension.excludes)
             symlinks.set(extension.symlinks)
         }
+        // Non-debuggable builds also run AGP's vital lint model tasks, which
+        // consume the generated asset descriptor just like mergeAssets does.
+        target.tasks.configureEach {
+            if (name.startsWith("generate") && name.contains("Lint") && name.endsWith("Model")) {
+                dependsOn(target.tasks.named(TASK))
+            }
+        }
         target.tasks.register<Delete>(CLEAN_TASK) {
             delete(target.assetsDir.resolve(FILE_NAME))
         }.also {

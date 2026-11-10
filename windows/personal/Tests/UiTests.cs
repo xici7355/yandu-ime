@@ -35,7 +35,7 @@ class UiTests {
  }
  InlineExpansion();
  var settings=new Settings();using(var engine=new Translator(new MockHandler()))using(var form=new SettingsForm(settings,engine,delegate{})){
-  form.Show();Pump(100);var layout=(TableLayoutPanel)form.Controls[0];var tabs=(Panel)layout.GetControlFromPosition(1,1);Check(tabs.Controls.Count==4,"four settings categories");
+  form.Show();Pump(100);var layout=(TableLayoutPanel)form.Controls[0];var tabs=(Panel)layout.GetControlFromPosition(0,2);Check(tabs.Controls.Count==4,"four settings categories");
   Panel translationPage=null;foreach(Panel page in tabs.Controls)if((string)page.Tag=="翻译")translationPage=page;
   Check(translationPage!=null&&translationPage.Visible,"first configuration opens translation page");
   using(var bitmap=new Bitmap(form.Width,form.Height)){form.DrawToBitmap(bitmap,new Rectangle(0,0,form.Width,form.Height));bitmap.Save("personal/bin/settings-preview.png");}

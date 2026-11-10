@@ -21,6 +21,7 @@ namespace PersonalIme {
   public long size;
  }
  internal sealed class Updates : IDisposable {
+  public const string OfficialRepository="xici7355/yandu-ime";
   readonly HttpClient client;
   public static readonly Version CurrentVersion=typeof(Updates).Assembly.GetName().Version;
   public static string CurrentText { get {return CurrentVersion.ToString(3);} }
@@ -36,7 +37,8 @@ namespace PersonalIme {
   }
   internal static Version ParseVersion(string tag){Version version;if(tag==null||!Regex.IsMatch(tag,@"^v?\d+\.\d+\.\d+(?:\.\d+)?$")||!Version.TryParse(tag.TrimStart('v'),out version))throw new InvalidDataException("发布版本号需使用 v0.3.4 这样的格式。");return new Version(version.Major,version.Minor,version.Build,Math.Max(0,version.Revision));}
   internal static bool AllowedDownload(Uri uri){return uri!=null&&uri.Scheme=="https"&&String.IsNullOrEmpty(uri.UserInfo)&&(uri.Host.Equals("github.com",StringComparison.OrdinalIgnoreCase)||uri.Host.EndsWith(".githubusercontent.com",StringComparison.OrdinalIgnoreCase));}
-  public async Task<ReleaseInfo> Check(string repository,CancellationToken token){
+  public Task<ReleaseInfo> Check(CancellationToken token){return Check(OfficialRepository,token);}
+  internal async Task<ReleaseInfo> Check(string repository,CancellationToken token){
    string repo=Repository(repository);if(repo.Length==0)throw new ArgumentException("请先填写 GitHub 更新仓库。");
    using(var deadline=CancellationTokenSource.CreateLinkedTokenSource(token)){
     deadline.CancelAfter(TimeSpan.FromSeconds(20));

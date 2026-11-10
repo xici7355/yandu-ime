@@ -14,7 +14,7 @@ android {
 
     defaultConfig {
         applicationId = "personal.translate.ime"
-        versionName = "0.1.3-personal.7"
+        versionName = "1.0.0"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
         @Suppress("UnstableApiUsage")
@@ -45,13 +45,14 @@ android {
         release {
             resValue("mipmap", "app_icon", "@mipmap/ic_launcher")
             resValue("mipmap", "app_icon_round", "@mipmap/ic_launcher_round")
-            resValue("string", "app_name", "个人翻译输入法")
+            resValue("string", "app_name", "言渡输入法")
             proguardFile("proguard-rules.pro")
         }
         debug {
-            resValue("mipmap", "app_icon", "@mipmap/ic_launcher_debug")
-            resValue("mipmap", "app_icon_round", "@mipmap/ic_launcher_round_debug")
-            resValue("string", "app_name", "个人翻译输入法·测试版")
+            isDebuggable = false
+            resValue("mipmap", "app_icon", "@mipmap/ic_launcher")
+            resValue("mipmap", "app_icon_round", "@mipmap/ic_launcher_round")
+            resValue("string", "app_name", "言渡输入法")
         }
     }
 

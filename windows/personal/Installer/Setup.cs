@@ -30,19 +30,19 @@ class Setup : Form {
  }
  Setup(){
   destination=installed??Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles),"PersonalTranslateIme");
-  Text="安装言渡输入法";Icon=PersonalIme.Brand.Icon;ClientSize=new Size(600,510);AutoScaleMode=AutoScaleMode.Dpi;Font=new Font("Microsoft YaHei UI",10);BackColor=Color.FromArgb(245,248,243);ForeColor=Color.FromArgb(28,35,28);FormBorderStyle=FormBorderStyle.FixedSingle;MaximizeBox=false;StartPosition=FormStartPosition.CenterScreen;
+  Text="安装言渡输入法";Icon=PersonalIme.Brand.Icon;ClientSize=new Size(600,510);AutoScaleMode=AutoScaleMode.Dpi;Font=new Font("Microsoft YaHei UI",10);BackColor=PersonalIme.Palette.Background;ForeColor=PersonalIme.Palette.Text;FormBorderStyle=FormBorderStyle.FixedSingle;MaximizeBox=false;StartPosition=FormStartPosition.CenterScreen;
   Controls.Add(new PictureBox{Image=PersonalIme.Brand.CreateImage(),SizeMode=PictureBoxSizeMode.Zoom,Left=36,Top=34,Width=66,Height=66});
   Controls.Add(new Label{Text="言渡输入法",Left=120,Top=36,Width=400,Height=36,Font=new Font("Microsoft YaHei UI",21,FontStyle.Bold)});
-  Controls.Add(new Label{Text="Windows 版 · 第三版",Left=122,Top=78,Width=350,Height=24,ForeColor=Color.DimGray});
+  Controls.Add(new Label{Text="Windows · V1.0",Left=122,Top=78,Width=350,Height=24,ForeColor=PersonalIme.Palette.Secondary});
   heading.SetBounds(36,130,530,42);heading.Font=new Font("Microsoft YaHei UI",18,FontStyle.Bold);heading.Text=installed==null?"落笔此岸，言达彼岸。":"升级言渡，保留原有配置";Controls.Add(heading);
-  description.SetBounds(36,185,530,55);description.ForeColor=Color.FromArgb(96,106,95);description.Text="中文全拼  /  实时翻译  /  译文朗读\r\n"+(installed==null?"配置 AI 接口后即可翻译；未配置时正常输入中文。":"已找到现有安装，将沿用原路径并保留 API 配置和词库。");Controls.Add(description);
+  description.SetBounds(36,185,530,55);description.ForeColor=PersonalIme.Palette.Secondary;description.Text="中文全拼  /  实时翻译  /  译文朗读\r\n"+(installed==null?"配置 AI 接口后即可翻译；未配置时正常输入中文。":"已找到现有安装，将沿用原路径并保留 API 配置和词库。");Controls.Add(description);
   locationLabel.SetBounds(36,246,528,25);locationLabel.Text=installed==null?"安装位置":"安装位置（升级沿用原路径）";Controls.Add(locationLabel);
-  location.SetBounds(36,277,420,30);location.Text=destination;location.ReadOnly=installed!=null;Controls.Add(location);
-  browse.SetBounds(466,275,98,34);browse.Text="更改…";browse.BackColor=Color.FromArgb(225,232,222);browse.Enabled=installed==null;Controls.Add(browse);
+  location.SetBounds(36,277,420,30);location.Text=destination;location.BackColor=PersonalIme.Palette.Surface;location.ForeColor=PersonalIme.Palette.Text;location.ReadOnly=installed!=null;Controls.Add(location);
+  browse.SetBounds(466,275,98,34);browse.Text="更改…";browse.BackColor=PersonalIme.Palette.Surface;browse.Enabled=installed==null;Controls.Add(browse);
   browse.Click+=delegate{using(var dialog=new FolderBrowserDialog{Description="选择安装文件夹的上级目录，程序将放入其中的 PersonalTranslateIme 文件夹",SelectedPath=Path.GetDirectoryName(location.Text),ShowNewFolderButton=true}){if(dialog.ShowDialog(this)==DialogResult.OK)location.Text=Path.Combine(dialog.SelectedPath,"PersonalTranslateIme");}};
-  status.SetBounds(36,326,528,25);status.ForeColor=Color.FromArgb(96,106,95);Controls.Add(status);
+  status.SetBounds(36,326,528,25);status.ForeColor=PersonalIme.Palette.Secondary;Controls.Add(status);
   progress.SetBounds(36,357,528,12);progress.Style=ProgressBarStyle.Continuous;progress.Visible=false;Controls.Add(progress);
-  action.SetBounds(36,390,528,48);action.Text=installed==null?"安装言渡":"升级言渡";action.BackColor=Color.FromArgb(174,255,46);action.Font=new Font(Font,FontStyle.Bold);Controls.Add(action);
+  action.SetBounds(36,390,528,48);action.Text=installed==null?"安装言渡":"升级言渡";action.BackColor=Color.FromArgb(174,255,50);action.Font=new Font(Font,FontStyle.Bold);action.ForeColor=Color.FromArgb(28,41,14);Controls.Add(action);
   secondary.SetBounds(36,451,528,30);secondary.Text="取消";secondary.BackColor=BackColor;Controls.Add(secondary);
   action.Click+=async delegate{if(finished){Launch("PersonalTranslateIme.exe","--settings");return;}await BeginInstall();};
   secondary.Click+=delegate{if(finished){Launch("WeaselServer.exe","");Close();}else if(!busy)Close();};

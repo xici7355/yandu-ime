@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.IO;
 using System.Net;
 using System.Net.Http;
@@ -27,13 +27,13 @@ class UpdateTests {
  }
  static string Folder(){return Path.Combine(root,Guid.NewGuid().ToString("N"));}
  static async Task Run(){
-  Check(Updates.CurrentText=="0.3.3","current version from application assembly");
+  Check(Updates.CurrentText=="1.0.0","current version from application assembly");
   Check(Updates.Repository("")=="","unset repository remains empty");
   Check(Updates.Repository(" https://github.com/test/yandu.git/ ")=="test/yandu","GitHub URL normalized");
   Check(Updates.Repository("test/yandu")=="test/yandu","owner/repository accepted");
   foreach(string input in new[]{"https://evil.invalid/test/yandu","test/yandu?token=secret","test/yandu/releases","../test","test/.."}){await Reject(()=>Task.Run(()=>Updates.Repository(input)),"invalid repository rejected");}
   Check(Updates.ParseVersion("v1.10.0")>Updates.ParseVersion("v1.9.9"),"versions compared numerically");
-  Check(Updates.ParseVersion("v0.3.3")==Updates.CurrentVersion,"three-part tag equals installed four-part assembly version");
+  Check(Updates.ParseVersion("v1.0.0")==Updates.CurrentVersion,"three-part tag equals installed four-part assembly version");
   await Reject(()=>Task.Run(()=>Updates.ParseVersion("v9.0.0-beta")),"prerelease tag cannot become stable update");
   var handler=new Fake();using(var client=new Updates(handler)){
    var release=await client.Check("test/yandu",CancellationToken.None);Check(release.Installer!=null&&release.Version>Updates.CurrentVersion,"new stable x64 installer selected");

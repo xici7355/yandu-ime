@@ -30,8 +30,7 @@ class MainFragment : Fragment() {
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, state: Bundle?): View {
         selected = state?.getInt("tab") ?: selected; ui = PersonalSettingsUi(requireContext())
         val root = LinearLayout(requireContext()).apply { orientation = LinearLayout.VERTICAL; setBackgroundColor(ui.background); setPadding(ui.dp(20), 0, ui.dp(20), 0) }
-        root.addView(ui.label("PERSONAL TRANSLATE", 11f, true).apply { letterSpacing = 0.18f; setPadding(ui.dp(4), ui.dp(22), 0, ui.dp(10)) })
-        root.addView(ui.label("设置", 32f).apply { setTypeface(typeface, android.graphics.Typeface.BOLD); setPadding(ui.dp(2), 0, 0, ui.dp(18)) })
+        root.addView(ui.brandHeader("设置"))
         tabs = LinearLayout(requireContext()); root.addView(tabs)
         body = LinearLayout(requireContext()).apply { orientation = LinearLayout.VERTICAL; setPadding(0, 0, 0, ui.dp(32)) }
         root.addView(ScrollView(requireContext()).apply { isFillViewport = true; addView(body) }, LinearLayout.LayoutParams(-1, 0, 1f))
@@ -93,7 +92,7 @@ class MainFragment : Fragment() {
         }
         ui.section(body, "使用")
         ui.row(body, "启用输入法", "打开手机的输入法管理") { startActivity(Intent(android.provider.Settings.ACTION_INPUT_METHOD_SETTINGS)) }
-        ui.row(body, "切换到个人翻译输入法") { (requireContext().getSystemService(android.content.Context.INPUT_METHOD_SERVICE) as android.view.inputmethod.InputMethodManager).showInputMethodPicker() }
+        ui.row(body, "切换到言渡输入法") { (requireContext().getSystemService(android.content.Context.INPUT_METHOD_SERVICE) as android.view.inputmethod.InputMethodManager).showInputMethodPicker() }
     }
     private fun input() {
         ui.section(body, "打字")
@@ -165,7 +164,7 @@ class MainFragment : Fragment() {
         ui.row(body, "朗读音色", "选择语音引擎、音色，调整语速与音调") { page("speech") }
         ui.section(body, "使用方式")
         ui.row(body, "点击译文替换中文", "替换对应原文；5 秒内可撤销。长按译文查看全文；小喇叭播放，再点停止。")
-        ui.section(body, "试输入")
+        ui.section(body, "输入预览")
         body.addView(EditText(requireContext()).apply {
             hint = "在这里试试中文输入和翻译"; setTextColor(ui.text); setHintTextColor(ui.muted); background = ui.shape()
             setPadding(ui.dp(18), ui.dp(16), ui.dp(18), ui.dp(16)); minLines = 3; gravity = Gravity.TOP
@@ -187,7 +186,10 @@ class MainFragment : Fragment() {
                 catch (_: Exception) { Toast.makeText(context, "重载失败，请重试", Toast.LENGTH_SHORT).show() }
             }
         }
+        ui.section(body, "版本与更新")
+        ui.row(body, "当前版本", BuildConfig.VERSION_NAME)
+        ui.row(body, "检查更新", "检查言渡正式版本，下载后由系统确认安装") { startActivity(Intent(requireContext(), org.fcitx.fcitx5.android.update.AppUpdateActivity::class.java)) }
         ui.section(body, "关于")
-        ui.row(body, "个人翻译输入法", "${BuildConfig.VERSION_NAME} · 基于 Fcitx5 Android") { navigateWithAnim(SettingsRoute.About) }
+        ui.row(body, "言渡输入法", "${BuildConfig.VERSION_NAME} · 基于 Fcitx5 Android") { navigateWithAnim(SettingsRoute.About) }
     }
 }

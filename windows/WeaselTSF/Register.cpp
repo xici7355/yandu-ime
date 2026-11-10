@@ -1,4 +1,4 @@
-#include "stdafx.h"
+﻿#include "stdafx.h"
 #include "Register.h"
 #include <strsafe.h>
 #include <WeaselUtility.h>
@@ -46,7 +46,7 @@ BOOL RegisterProfiles() {
   std::wstring iconFile(achIconFile, cchIconFile);
   const auto separator = iconFile.find_last_of(L"\\/");
   if (separator != std::wstring::npos) {
-    auto profileIcon = iconFile.substr(0, separator + 1) + L"yandu-profile-v033.ico";
+    auto profileIcon = iconFile.substr(0, separator + 1) + L"yandu-profile-v100.ico";
     if (GetFileAttributesW(profileIcon.c_str()) != INVALID_FILE_ATTRIBUTES)
       iconFile = profileIcon;
   }

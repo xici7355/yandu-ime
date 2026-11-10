@@ -39,7 +39,7 @@ class TranslationSettingsActivity : Activity() {
         title = when (section) {
             "speech" -> "朗读音色与试听"
             "privacy" -> "翻译隐私与缓存"
-            else -> "翻译与试输入"
+            else -> "翻译与输入预览"
         }
         column.addView(ui.label("‹  返回设置", 15f).apply {
             minimumHeight = ui.dp(48); gravity = android.view.Gravity.CENTER_VERTICAL
@@ -103,9 +103,9 @@ class TranslationSettingsActivity : Activity() {
     }
     private fun translationPage() {
         label("自动翻译后点击译文替换对应原文，长按查看全文；小喇叭可播放或停止；替换后 5 秒内点击提示可撤销。")
-        label("试输入（不保存）")
+        label("输入预览（不保存）")
         column.addView(EditText(this).apply {
-            hint = "在这里测试中文输入、翻译和朗读"
+            hint = "在这里输入中文，体验翻译与朗读"
             setTextColor(ui.text); setHintTextColor(ui.muted); background = ui.shape(); setPadding(ui.dp(16), ui.dp(14), ui.dp(16), ui.dp(14))
             inputType = InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_FLAG_MULTI_LINE
             minLines = 2; maxLines = 4

@@ -5,10 +5,10 @@ namespace PersonalIme {
   public static bool Dark {
    get {try {using(var key=Registry.CurrentUser.OpenSubKey(@"Software\Microsoft\Windows\CurrentVersion\Themes\Personalize"))return key!=null&&(int)key.GetValue("AppsUseLightTheme",1)==0;}catch{return false;}}
   }
-  public static Color Background {get{return Dark?Color.FromArgb(23,26,24):Color.FromArgb(248,250,247);}}
-  public static Color Text {get{return Dark?Color.WhiteSmoke:Color.FromArgb(30,34,29);}}
-  public static Color Surface {get{return Dark?Color.FromArgb(31,35,32):Color.White;}}
-  public static Color Secondary {get{return Dark?Color.Silver:Color.FromArgb(90,96,86);}}
-  public static Color AccentText {get{return Dark?Color.FromArgb(174,255,46):Color.FromArgb(55,100,5);}}
+  public static Color Background {get{return Dark?Color.FromArgb(16,18,17):Color.FromArgb(245,246,242);}}
+  public static Color Text {get{return Dark?Color.FromArgb(241,243,237):Color.FromArgb(32,37,29);}}
+  public static Color Surface {get{return Dark?Color.FromArgb(27,30,27):Color.White;}}
+  public static Color Secondary {get{return Dark?Color.FromArgb(156,164,151):Color.FromArgb(102,112,95);}}
+  public static Color AccentText {get{return Dark?Color.FromArgb(174,255,50):Color.FromArgb(55,100,5);}}
  }
 }

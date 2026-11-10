@@ -20,6 +20,20 @@ class PersonalSettingsUi(val context: Context) {
     fun label(value: String, size: Float = 16f, secondary: Boolean = false) = TextView(context).apply {
         text = value; textSize = size; setTextColor(if (secondary) muted else this@PersonalSettingsUi.text); includeFontPadding = false
     }
+    fun brandHeader(section: String): LinearLayout = LinearLayout(context).apply {
+        orientation = LinearLayout.VERTICAL
+        setPadding(dp(2), dp(20), dp(2), dp(18))
+        addView(LinearLayout(context).apply {
+            orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER_VERTICAL
+            addView(ImageView(context).apply { setImageResource(org.fcitx.fcitx5.android.R.drawable.yandu_brand); contentDescription = "言渡输入法图标" }, LinearLayout.LayoutParams(dp(60), dp(60)).apply { marginEnd = dp(16) })
+            addView(LinearLayout(context).apply {
+                orientation = LinearLayout.VERTICAL
+                addView(label("言渡输入法", 25f).apply { setTypeface(typeface, android.graphics.Typeface.BOLD) })
+                addView(label("落笔此岸，言达彼岸。", 12f, true).apply { setPadding(0, dp(7), 0, 0) })
+            })
+        })
+        if (section.isNotEmpty()) addView(label(section, 20f).apply { setPadding(0, dp(20), 0, 0) })
+    }
     fun section(parent: LinearLayout, value: String) {
         parent.addView(label(value, 13f, true).apply { setPadding(dp(4), dp(26), 0, dp(12)) })
     }

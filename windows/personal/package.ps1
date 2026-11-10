@@ -11,7 +11,7 @@ foreach($name in @('weaselx64.dll','weasel.dll','WeaselServer.exe','WeaselDeploy
  Copy-Item $source $payload -Force
 }
 Copy-Item "$PSScriptRoot/bin/PersonalTranslateIme.exe" $payload -Force
-Copy-Item "$PSScriptRoot/Assets/yandu.ico" "$payload/yandu-profile-v033.ico" -Force
+Copy-Item "$PSScriptRoot/Assets/yandu.ico" "$payload/yandu-profile-v100.ico" -Force
 Copy-Item "$PSScriptRoot/data/weasel.yaml" "$payload/data" -Force
 Copy-Item "$root/deps/rime-prelude/*.yaml" "$payload/data" -Force
 foreach($name in @('luna_pinyin.schema.yaml','luna_pinyin_simp.schema.yaml','luna_pinyin.dict.yaml','pinyin.yaml')){Copy-Item "$root/deps/rime-luna-pinyin/$name" "$payload/data" -Force}
@@ -44,7 +44,7 @@ $compiler=Join-Path $env:WINDIR 'Microsoft.NET/Framework64/v4.0.30319/csc.exe'
 $manifest=(Get-Content "$PSScriptRoot/Agent/app.manifest" -Raw).Replace('level="asInvoker"','level="requireAdministrator"').Replace('name="PersonalTranslateIme.Agent"','name="PersonalTranslateIme.Setup"')
 $manifestPath=Join-Path $PSScriptRoot 'bin/setup.manifest'
 [IO.File]::WriteAllText($manifestPath,$manifest)
-$output=Join-Path $dist '言渡输入法-Windows-x64-0.3.3.exe'
+$output=Join-Path $dist '言渡输入法-Windows-x64-1.0.0.exe'
 $uninstallSource=(Resolve-Path "$PSScriptRoot/Installer/Uninstall.cs").Path
 & $compiler /nologo /utf8output /target:winexe /platform:x64 /optimize+ "/win32manifest:$manifestPath" "/win32icon:$PSScriptRoot/Assets/yandu.ico" "/out:$payload/Uninstall.exe" /r:System.Windows.Forms.dll $uninstallSource
 if($LASTEXITCODE){throw '卸载程序编译失败'}
@@ -54,7 +54,7 @@ Compress-Archive -Path "$stage/*" -DestinationPath $archive
 $source=(Resolve-Path "$PSScriptRoot/Installer/Setup.cs").Path
 $assemblyInfo=(Resolve-Path "$PSScriptRoot/Installer/AssemblyInfo.cs").Path
 $brand=(Resolve-Path "$PSScriptRoot/Agent/Brand.cs").Path
-& $compiler /nologo /utf8output /target:winexe /platform:x64 /optimize+ "/win32manifest:$PSScriptRoot/Agent/app.manifest" "/resource:$archive,package.zip" "/resource:$PSScriptRoot/Assets/yandu.png,yandu.png" "/resource:$PSScriptRoot/Assets/yandu.ico,yandu.ico" "/win32icon:$PSScriptRoot/Assets/yandu.ico" "/out:$output" /r:System.Windows.Forms.dll /r:System.Drawing.dll /r:System.IO.Compression.dll /r:System.IO.Compression.FileSystem.dll $source $assemblyInfo $brand
+& $compiler /nologo /utf8output /target:winexe /platform:x64 /optimize+ "/win32manifest:$PSScriptRoot/Agent/app.manifest" "/resource:$archive,package.zip" "/resource:$PSScriptRoot/Assets/yandu.png,yandu.png" "/resource:$PSScriptRoot/Assets/yandu.ico,yandu.ico" "/win32icon:$PSScriptRoot/Assets/yandu.ico" "/out:$output" /r:System.Windows.Forms.dll /r:System.Drawing.dll /r:System.IO.Compression.dll /r:System.IO.Compression.FileSystem.dll $source $assemblyInfo $brand (Join-Path $PSScriptRoot "Agent/Palette.cs")
 if($LASTEXITCODE){throw '安装包编译失败'}
 Copy-Item "$PSScriptRoot/使用说明.txt" $dist -Force
 $hash=Get-FileHash $output -Algorithm SHA256
