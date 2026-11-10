@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 
 #include "Globals.h"
 #include <WeaselIPC.h>
@@ -283,6 +283,7 @@ class WeaselTSF : public ITfTextInputProcessorEx,
   HWND _personalBeginEdit = nullptr;
   LONG _personalBeginStart = 0;
   LONG _personalBeginEnd = 0;
+  bool _personalBeginLineEnd = false;
   HWND _personalEdit = nullptr;
   LONG _personalEditStart = 0;
   LONG _personalEditLength = 0;

@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Net;
 using System.Net.Http;
 using System.Text;
@@ -31,6 +31,18 @@ class Tests {
    handler.Status=HttpStatusCode.OK;handler.Reply="{}";try{await engine.Translate(config,"格式",CancellationToken.None);throw new Exception("format");}catch(InvalidOperationException){Check(true,"malformed response");}
    var cts=new CancellationTokenSource();cts.Cancel();try{await engine.Translate(config,"取消",cts.Token);throw new Exception("cancel");}catch(OperationCanceledException){Check(true,"cancellation");}
   }
+  var sentenceHandler=new MockHandler();sentenceHandler.Reply="{\"choices\":[{\"message\":{\"content\":\"I'm still testing this version to see how well it works.\"}}]}";
+  using(var engine=new Translator(sentenceHandler,LocalDictionary.Shared)){
+   string sentence="我还在测试这个版本使用起来怎么样";
+   string result=await engine.Translate(config,sentence,CancellationToken.None);
+   var payload=new System.Web.Script.Serialization.JavaScriptSerializer().DeserializeObject(sentenceHandler.Body) as System.Collections.Generic.Dictionary<string,object>;
+   var messages=(object[])payload["messages"];var user=(System.Collections.Generic.Dictionary<string,object>)messages[1];var system=(System.Collections.Generic.Dictionary<string,object>)messages[0];
+   Check((string)user["content"]==sentence,"entire reported sentence reaches API without dropping first-person prefix");
+   Check(((string)system["content"]).Contains("declarative statement")&&((string)system["content"]).Contains("tense/aspect"),"translation instruction preserves statement and aspect");
+   Check(result.StartsWith("I'm still testing")&&sentenceHandler.Calls==1,"sentence bypasses word dictionary and keeps full model response");
+  }
+  Check(WeChatEditor.CanAttach("我还在测试这个版本使用起来怎么样","测试这个版本使用起来怎么样"),"WeChat full draft can attach to verified current suffix");
+  Check(!WeChatEditor.CanAttach("另一个输入框的文字","之前的文字")&&!WeChatEditor.CanAttach("password=fixture你好","你好"),"WeChat mismatched or sensitive full draft cannot attach");
   var snap=Snapshot.Parse("S|42|1234|5678|100|200\n你好");Check(snap!=null&&snap.Revision==42&&snap.Source=="你好"&&snap.X==100,"native snapshot");Check(Snapshot.Parse("S|bad\ntext")==null,"invalid snapshot");
  }
 }

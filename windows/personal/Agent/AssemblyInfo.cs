@@ -1,8 +1,8 @@
-using System.Reflection;
+﻿using System.Reflection;
 [assembly:AssemblyTitle("言渡输入法 Windows")]
 [assembly:AssemblyProduct("言渡输入法")]
-[assembly:AssemblyVersion("1.2.0.0")]
-[assembly:AssemblyFileVersion("1.2.0.0")]
+[assembly:AssemblyVersion("1.2.1.0")]
+[assembly:AssemblyFileVersion("1.2.1.0")]
 
 
 

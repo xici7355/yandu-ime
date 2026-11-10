@@ -138,7 +138,7 @@ namespace PersonalIme {
     var state=pending.Status==TaskStatus.RanToCompletion?pending.Result:null;
     if(snapshot==null||snapshot.Target!=wechatReadingTarget)return;
     if(state==null||state.Foreground!=previewForeground||state.Text.Length==0){if(wechatState!=null||wechatClearPending)ResetTranslationReason("wechat_editor_changed");return;}
-    if(wechatState==null&&state.Text!=snapshot.Source){if(wechatClearPending)ResetTranslationReason("wechat_source_mismatch");return;}
+    if(wechatState==null&&!WeChatEditor.CanAttach(state.Text,snapshot.Source)){if(wechatClearPending)ResetTranslationReason("wechat_source_mismatch");return;}
     wechatState=state;wechatClearPending=false;leased=false;wechatNextRead=DateTime.UtcNow.AddMilliseconds(300);
     if(!composing)Accept(new Snapshot{Revision=snapshot.Revision+1,Target=currentTarget,Foreground=state.Foreground,Source=state.Text,X=state.X,Y=state.Y,Mode="uia"});
    }

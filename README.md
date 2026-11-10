@@ -8,13 +8,13 @@
 
 V1.0 是首个正式版本，Android 与 Windows 的应用版本均为 **1.0.0**。此前研发快照不计入正式版本。
 
-## Windows V1.2 本地试用包
+## Windows V1.2.1 本地试用包
 
 Windows 新增 CC-CEDICT 本地中英双向查询，完整命中词语或固定短语时不调用 API；句子未命中时沿用已配置的 API。词典不是离线整句翻译模型。划词与截屏共用原位覆盖／对照界面。
 
 **密码保护与敏感凭据拦截强制启用，不能关闭。** 不上传个人词库、学习记录或翻译缓存，不收集输入内容用于改进或训练。联网翻译仍会发送本次普通待译文字，第三方服务商的留存规则另行适用。保护范围和限制见 [隐私说明](docs/PRIVACY.md)。
 
-本地包与使用说明见 [Windows V1.2](docs/WINDOWS-V1.2.md)。尚未发布到 GitHub Releases；下方链接仍指向正式 V1.0，Android 保持 V1.0。
+本次修复原文句首漏字及陈述语气丢失，验证记录见 [Windows V1.2.1](docs/WINDOWS-V1.2.1.md)；词典使用见 [Windows V1.2](docs/WINDOWS-V1.2.md)。尚未发布到 GitHub Releases；下方链接仍指向正式 V1.0，Android 保持 V1.0。
 
 ## 下载与安装
 

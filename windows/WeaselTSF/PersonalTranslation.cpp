@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: GPL-3.0-or-later
+﻿// SPDX-License-Identifier: GPL-3.0-or-later
 // Personal translation bridge. No network requests or disk text in the IME DLL.
 #include "stdafx.h"
 #include "WeaselTSF.h"
@@ -111,6 +111,36 @@ bool ReadRange(TfEditCookie ec, ITfRange* range, std::wstring& text) {
   return true;
 }
 
+// Resolve a fresh current-line range at a commit boundary. Retained TSF
+// bookmarks can move when Chromium rewrites a composition; never infer that
+// the shortened bookmark is the complete sentence. Do not cross a newline or
+// translate a suffix beyond the caret. Oversized lines fail without truncation.
+bool CompleteLineAtEnd(ITfContext* context, TfEditCookie ec, ITfRange* commit,
+                       com_ptr<ITfRange>& line) {
+  com_ptr<ITfRange> after;
+  LONG moved = 0;
+  std::wstring suffix, prefix;
+  if (FAILED(commit->Clone(&after)) ||
+      FAILED(after->Collapse(ec, TF_ANCHOR_END)) ||
+      FAILED(after->ShiftEnd(ec, 1, &moved, nullptr)) ||
+      !ReadRange(ec, after, suffix) ||
+      (!suffix.empty() && suffix[0] != L'\r' && suffix[0] != L'\n')) return false;
+  if (FAILED(commit->Clone(&line)) ||
+      FAILED(line->ShiftStart(ec, -2001, &moved, nullptr)) ||
+      !ReadRange(ec, line, prefix)) return false;
+  auto boundary = prefix.find_last_of(L"\r\n");
+  if (boundary != std::wstring::npos) {
+    LONG skip = static_cast<LONG>(boundary + 1);
+    if (FAILED(line->ShiftStart(ec, skip, &moved, nullptr)) || moved != skip) return false;
+    prefix.erase(0, skip);
+  }
+  if (prefix.empty() || prefix.size() > 2000 || IsSensitive(context, ec, line)) {
+    line.Release();
+    return false;
+  }
+  return true;
+}
+
 LONG RangeEnd(ITfContext* context, TfEditCookie ec, ITfRange* range) {
   com_ptr<ITfRangeACP> acp;
   LONG start = 0, length = 0;
@@ -200,6 +230,9 @@ void WeaselTSF::PersonalBeginComposition(ITfContext*) {
     const auto selection = EditSelection(focus);
     _personalBeginStart = selection.cpMin;
     _personalBeginEnd = selection.cpMax;
+    std::wstring next;
+    _personalBeginLineEnd = selection.cpMax == GetWindowTextLengthW(focus) ||
+        (ReadEdit(focus, selection.cpMax, 1, next) && next.find_first_of(L"\r\n") == 0);
     Trace(L"begin RichEdit start=" + std::to_wstring(selection.cpMin));
   }
 }
@@ -287,8 +320,17 @@ void WeaselTSF::PersonalCommitted(ITfContext* context, TfEditCookie ec, ITfRange
     const LONG start = _personalBeginStart;
     const bool append = _personalEdit == edit && _personalBeginStart == _personalBeginEnd &&
         start == _personalEditStart + static_cast<LONG>(_personalEditExpected.size());
-    const std::wstring expected = append ? _personalEditExpected + text : text;
-    const LONG first = append ? _personalEditStart : start;
+    std::wstring expected = append ? _personalEditExpected + text : text;
+    LONG first = append ? _personalEditStart : start;
+    // During this callback RichEdit may still expose the Latin composition.
+    // Only read the prefix before its original start; append the committed
+    // Chinese supplied by TSF, then verify after EndComposition as before.
+    std::wstring prefix;
+    if (_personalBeginLineEnd && ReadEdit(edit, 0, start, prefix)) {
+      auto boundary = prefix.find_last_of(L"\r\n");
+      first = boundary == std::wstring::npos ? 0 : static_cast<LONG>(boundary + 1);
+      expected = prefix.substr(first) + text;
+    }
     PersonalReset();
     if (expected.empty() || expected.size() > 2000 || expected.find_first_of(L"\r\n") != std::wstring::npos) return;
     _personalEdit = edit;
@@ -319,6 +361,11 @@ void WeaselTSF::PersonalCommitted(ITfContext* context, TfEditCookie ec, ITfRange
   } else {
     PersonalReset();
     range->Clone(&_personalRange);
+    _personalContext = context;
+  }
+  com_ptr<ITfRange> complete;
+  if (CompleteLineAtEnd(context, ec, range, complete)) {
+    _personalRange = complete;
     _personalContext = context;
   }
   if (_personalRange)

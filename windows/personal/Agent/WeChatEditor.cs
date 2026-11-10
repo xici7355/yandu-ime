@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Diagnostics;
 using System.Linq;
 using System.Threading.Tasks;
@@ -29,6 +29,7 @@ namespace PersonalIme {
    var text=(TextPattern)p;var selection=text.GetSelection();
    return selection.Length==1&&selection[0].CompareEndpoints(TextPatternRangeEndpoint.Start,selection[0],TextPatternRangeEndpoint.End)==0&&selection[0].CompareEndpoints(TextPatternRangeEndpoint.End,text.DocumentRange,TextPatternRangeEndpoint.End)==0;
   }
+  internal static bool CanAttach(string full,string fragment){return !String.IsNullOrEmpty(fragment)&&!String.IsNullOrEmpty(full)&&full.Length<=12000&&full.EndsWith(fragment,StringComparison.Ordinal)&&!PrivacyPolicy.IsSensitive(full);}
   public static State Read(IntPtr foreground,int[] identity) {
    try {
     var editor=Editor(foreground);if(editor==null)return null;

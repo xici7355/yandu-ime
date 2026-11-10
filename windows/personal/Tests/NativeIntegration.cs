@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Drawing;
 using System.Runtime.InteropServices;
 using System.Reflection;
@@ -91,8 +91,12 @@ class NativeIntegration {
     SendMessage(panel.Handle,0x202,IntPtr.Zero,new IntPtr(((panel.Speaker.Top+panel.Speaker.Height/2)<<16)|(panel.Speaker.Left+panel.Speaker.Width/2)));Check(!(bool)Field(agent,"speaking"),"second speaker click stops synthesis");
     Call(agent,"Speak");Pump(1300);speech.SetOutputToNull();Check(audio.Length>44,"system voice produces real WAV audio");
    }
+   editor.Text="我还在测试这个版本使用起来怎么样";editor.SelectionStart=editor.TextLength;Pump(150);TypeFixture("nihao ");Pump(1000);
+   Check(editor.Text=="我还在测试这个版本使用起来怎么样你好"&&((Snapshot)Field(agent,"snapshot")).Source==editor.Text,"RichEdit captures complete current line including existing subject");
+   Call(agent,"Apply",false);Pump(400);Check(editor.Text=="Hello.","RichEdit replaces full captured line");Call(agent,"Apply",true);Pump(400);Check(editor.Text=="我还在测试这个版本使用起来怎么样你好","RichEdit undo restores full line");
+   editor.Text="这个版本使用起来怎么样";editor.SelectionStart=0;Pump(150);TypeFixture("wo ");Pump(400);editor.SelectionStart=editor.TextLength;Pump(200);TypeFixture("nihao ");Pump(1000);Check(editor.Text=="我这个版本使用起来怎么样你好"&&((Snapshot)Field(agent,"snapshot")).Source==editor.Text,"RichEdit prefix insertion is retained on next full-line translation");
    editor.Text="你好";editor.SelectionStart=2;Pump(150);TypeFixture("nihao ");Pump(850);Console.WriteLine("duplicate fixture="+editor.Text);Check(editor.Text=="你好你好","duplicate prefix fixture");
-   TypeFixture("{BACKSPACE 2}");Pump(500);Check(editor.Text=="你好"&&Field(agent,"snapshot")==null,"deleting source cannot retarget identical earlier text");
+   TypeFixture("{BACKSPACE 2}");Pump(500);Check(editor.Text=="你好"&&((Snapshot)Field(agent,"snapshot")).Source=="你好","deleting part of a complete current line refreshes exact source");editor.SelectionStart=0;Pump(200);
    Call(agent,"Apply",false);Check(editor.Text=="你好","stale replacement leaves earlier text intact");
    config.SetKey("");calls=handler.Calls;editor.Clear();Pump(150);TypeFixture("nihao ");Pump(800);Check(editor.Text=="你好","ordinary Chinese input without API");Check(handler.Calls==calls&&!panel.Visible,"no key means no request and no preview");
    config.SetKey("sk-local-native-test");
