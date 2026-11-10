@@ -1,4 +1,4 @@
-﻿param([switch]$Test,[switch]$UiTest,[switch]$RaceTest)
+﻿param([switch]$Test,[switch]$UiTest,[switch]$RaceTest,[switch]$UpdateTest,[switch]$UpdateUiTest)
 $ErrorActionPreference='Stop'
 $root=Split-Path $PSScriptRoot -Parent
 Set-Location $root
@@ -38,3 +38,18 @@ if($RaceTest){
 }
 
 
+
+if($UpdateTest){
+ $source=(Resolve-Path "$PSScriptRoot/Tests/UpdateTests.cs").Path
+ & $compiler /nologo /utf8output /target:exe /main:UpdateTests "/out:$out/UpdateTests.exe" @references @sources $source
+ if($LASTEXITCODE){throw '更新测试编译失败'}
+ & "$out/UpdateTests.exe"
+ if($LASTEXITCODE){throw '更新测试失败'}
+}
+if($UpdateUiTest){
+ $source=(Resolve-Path "$PSScriptRoot/Tests/UpdateUiTest.cs").Path
+ & $compiler /nologo /utf8output /target:exe /main:UpdateUiTest "/out:$out/UpdateUiTest.exe" @references @sources $source
+ if($LASTEXITCODE){throw '更新界面检查编译失败'}
+ & "$out/UpdateUiTest.exe"
+ if($LASTEXITCODE){throw '更新界面检查失败'}
+}

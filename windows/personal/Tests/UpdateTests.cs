@@ -28,6 +28,11 @@ class UpdateTests {
  static string Folder(){return Path.Combine(root,Guid.NewGuid().ToString("N"));}
  static async Task Run(){
   Check(Updates.CurrentText=="1.0.0","current version from application assembly");
+  var originalSettings=new Settings{Endpoint="https://example.invalid/v1",Model="fixture-model"};originalSettings.SetKey("fixture-only-key");
+  var serializer=new System.Web.Script.Serialization.JavaScriptSerializer();string legacy=serializer.Serialize(originalSettings);legacy=legacy.Substring(0,legacy.Length-1)+",\"UpdateRepository\":\"other/repository\"}";
+  var migrated=serializer.Deserialize<Settings>(legacy);
+  Check(migrated.Endpoint==originalSettings.Endpoint&&migrated.Model==originalSettings.Model&&migrated.Key()=="fixture-only-key","legacy settings preserve endpoint model and encrypted key");
+  Check(typeof(Settings).GetField("UpdateRepository")==null&&Updates.OfficialRepository=="xici7355/yandu-ime","legacy custom repository cannot override built-in source");
   Check(Updates.Repository("")=="","unset repository remains empty");
   Check(Updates.Repository(" https://github.com/test/yandu.git/ ")=="test/yandu","GitHub URL normalized");
   Check(Updates.Repository("test/yandu")=="test/yandu","owner/repository accepted");

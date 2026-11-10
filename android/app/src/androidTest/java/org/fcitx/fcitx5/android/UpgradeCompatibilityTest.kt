@@ -18,7 +18,7 @@ class UpgradeCompatibilityTest {
         settings.debounceMs = 450
         settings.privacyMode = true
         context.getSharedPreferences("formal_upgrade_probe", Context.MODE_PRIVATE).edit().putBoolean("seeded",true).commit()
-        assertEquals("fixture-only-key",settings.readApiKey())
+        assertEquals("fixture-only-key",settings.apiKey())
     }
 
     @Test fun verifyAfterUpgrade() {
@@ -26,9 +26,10 @@ class UpgradeCompatibilityTest {
         val settings=TranslationConfig(context)
         assertEquals("https://upgrade-fixture.invalid/v1",settings.endpoint)
         assertEquals("upgrade-fixture-model",settings.model)
-        assertEquals("fixture-only-key",settings.readApiKey())
+        assertEquals("fixture-only-key",settings.apiKey())
         assertEquals(450,settings.debounceMs)
         assertTrue(settings.privacyMode)
     }
 }
+
 

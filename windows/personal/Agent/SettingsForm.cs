@@ -81,7 +81,7 @@ namespace PersonalIme {
      updateStatus.Text="发现新版 "+release.tag_name+(release.Installer==null?"，维护者尚未上传 Windows 安装包。":"，可下载后确认安装。");downloadUpdate.Enabled=release.Installer!=null;
     }catch(OperationCanceledException){if(!IsDisposed)updateStatus.Text="检查已取消或超时，请稍后重试。";}
     catch(Exception ex){if(!IsDisposed)updateStatus.Text=ex is System.Net.Http.HttpRequestException?"无法连接 GitHub，请检查网络后重试。":ex.Message;}
-    finally{if(!IsDisposed)checkUpdate.Enabled=true;}
+    finally{if(!IsDisposed){checkUpdate.Enabled=true;releasePage.Enabled=true;}}
    };
    releasePage.Click+=delegate{try{Process.Start(new ProcessStartInfo{FileName=availableRelease!=null?availableRelease.html_url:"https://github.com/"+Updates.OfficialRepository+"/releases",UseShellExecute=true});}catch{updateStatus.Text="无法打开浏览器。";}};
    downloadUpdate.Click+=async delegate{
