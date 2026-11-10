@@ -1,6 +1,6 @@
-# 言渡 Android
+# 言渡 Android · V1.0
 
-当前交付：第7版，0.1.3-personal.7，ARM64 versionCode 172。
+当前正式版本 1.0.0。
 
 - [安装使用](../docs/INSTALL-ANDROID.md)
 - [构建说明](../docs/BUILD-ANDROID.md)

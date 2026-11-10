@@ -17,6 +17,9 @@ class UpgradeCompatibilityTest {
         settings.saveApiKey("fixture-only-key")
         settings.debounceMs = 450
         settings.privacyMode = true
+        // Instrumentation can terminate immediately; flush this same prefs
+        // file rather than relying on apply()'s delayed writer before upgrade.
+        assertTrue(context.getSharedPreferences("translation",Context.MODE_PRIVATE).edit().putBoolean("upgrade_probe_written",true).commit())
         context.getSharedPreferences("formal_upgrade_probe", Context.MODE_PRIVATE).edit().putBoolean("seeded",true).commit()
         assertEquals("fixture-only-key",settings.apiKey())
     }

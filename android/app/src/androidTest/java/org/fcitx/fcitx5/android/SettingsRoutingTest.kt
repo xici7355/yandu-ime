@@ -32,6 +32,7 @@ class SettingsRoutingTest {
     }
     @Test fun keyboardSettingsAndLegacyRoutesReachModernIndex() {
         val context = instrumentation.targetContext
+        selectTestIme()
         val editorActivity = instrumentation.startActivitySync(Intent(context, TranslationSettingsActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
         try {
             instrumentation.runOnMainSync {

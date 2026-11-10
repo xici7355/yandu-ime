@@ -34,6 +34,7 @@ class SymbolsKeyboardTest {
     }
     @Test fun separateNumberPadAndThreePopulatedSymbolCategories() {
         val context = inst.targetContext
+        selectTestIme()
         val activity = inst.startActivitySync(Intent(context, TranslationSettingsActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
         lateinit var editor: EditText
         try {

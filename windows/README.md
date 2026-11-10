@@ -1,6 +1,6 @@
-# 言渡 Windows
+# 言渡 Windows · V1.0
 
-当前交付：0.3.3，Windows x64；包含 32 位与 64 位宿主所需的 TSF 模块。
+当前正式版本 1.0.0，提供 Windows x64 安装器与 32/64 位宿主所需的 TSF 模块。
 
 - [安装使用](../docs/INSTALL-WINDOWS.md)
 - [构建说明](../docs/BUILD-WINDOWS.md)

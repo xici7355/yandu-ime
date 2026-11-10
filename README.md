@@ -1,76 +1,75 @@
-<p align="center"><img src="assets/yandu.png" width="104" alt="言渡图标"></p>
+<p align="center"><img src="assets/yandu.png" width="104" alt="言渡输入法"></p>
 
-# 言渡输入法 · Yandu IME
+# 言渡输入法 · V1.0
 
 **落笔此岸，言达彼岸。**
 
-言渡把中文输入、AI 翻译和译文朗读放在一起：输入中文后查看英文译文，点击替换对应原文，也可以继续保留中文。没有配置 API 或网络不可用时，仍能正常输入。
+言渡将中文输入、AI 翻译和译文朗读放在同一条输入流程中。输入中文后查看译文，点击替换对应原文，也可以继续保留中文。未配置 API 或网络不可用时，仍能正常输入。
 
-本仓库包含独立的 Android 与 Windows 项目。Android 基于 Fcitx5 Android，Windows 基于 Rime 小狼毫；两端使用各自的系统输入法框架。
+V1.0 是首个正式版本，Android 与 Windows 的应用版本均为 **1.0.0**。此前研发快照不计入正式版本。
 
-## 下载
+## 下载与安装
 
-| 平台 | 当前版本 | 安装包 | 环境 |
-| --- | --- | --- | --- |
-| Windows | 0.3.3 | [Yandu-Setup-x64.exe](https://github.com/xici7355/yandu-ime/releases/download/v0.3.3/Yandu-Setup-x64.exe) | Windows 10/11 x64，本机测试为 Windows 11 |
-| Android | 第7版 · 0.1.3-personal.7 | [Yandu-Android-arm64-v7.apk](https://github.com/xici7355/yandu-ime/releases/download/android-v7/Yandu-Android-arm64-v7.apk) | Android 6.0+，当前安装包仅 ARM64 |
+| 平台 | 安装包 | 环境 |
+| --- | --- | --- |
+| Windows | [Yandu-Setup-x64.exe](https://github.com/xici7355/yandu-ime/releases/download/v1.0.0/Yandu-Setup-x64.exe) | Windows 10/11 x64，本机验收为 Windows 11 |
+| Android ARM64 | [Yandu-Android-arm64.apk](https://github.com/xici7355/yandu-ime/releases/download/v1.0.0/Yandu-Android-arm64.apk) | Android 6.0+，常见 ARM64 手机 |
+| Android x86_64 | [Yandu-Android-x86_64.apk](https://github.com/xici7355/yandu-ime/releases/download/v1.0.0/Yandu-Android-x86_64.apk) | Android 6.0+，x86_64 设备或模拟器 |
 
-[全部发布版本](https://github.com/xici7355/yandu-ime/releases) · [Windows 安装使用](docs/INSTALL-WINDOWS.md) · [Android 安装使用](docs/INSTALL-ANDROID.md) · [版本介绍](CHANGELOG.md)
+[正式发布页与 SHA-256](https://github.com/xici7355/yandu-ime/releases/tag/v1.0.0) · [Windows 使用说明](docs/INSTALL-WINDOWS.md) · [Android 使用说明](docs/INSTALL-ANDROID.md) · [版本介绍](CHANGELOG.md)
 
-安卓版现有安装包沿用“个人翻译输入法·测试版”的应用名称；本仓库统一使用“言渡”名称，没有改动已交付 APK 的包名或签名。
+两端统一使用“言渡输入法”名称和图标，设置按键盘、输入、翻译、隐私四类组织，采用跟随系统深浅色的中性色与荧光绿点缀。
 
 ## 主要功能
 
-- 全拼中文和英文输入，本地词频学习。
-- 中文上屏后请求 AI 翻译，可自行配置兼容 Chat Completions 的接口地址、模型和密钥。
-- 点击译文替换对应中文；替换前核对原文范围与输入位置。
-- 译文朗读，再次点击结束播放，使用系统提供的音色。
-- 末尾逗号、句号等标点变化复用译文；保留内存翻译缓存。
-- 设置按“键盘、输入、翻译、隐私”组织。
+- 中文全拼、英文输入和本地词频学习。
+- 中文上屏后实时翻译；接口地址、模型和 API 密钥可自行配置，支持兼容 Chat Completions 的服务。
+- 点击译文替换对应原文；替换前核对原文、输入范围和光标位置。
+- 译文朗读与停止，使用系统可用音色。
+- 内存翻译缓存与末尾标点复用，避免仅因末尾标点变化重复请求。
+- 官方更新源直接内置，用户无需填写仓库地址。
 
-| 交互 | Android 第7版 | Windows 0.3.3 |
+| 交互 | Android | Windows |
 | --- | --- | --- |
-| 查看完整译文 | 长按译文 | 右键在原卡片内展开，超长时滚动 |
-| 撤回替换 | 5 秒内点击撤销，原文位置须仍有效 | 再点同一译文区域，输入位置改变后失效 |
-| 键盘外观 | 主题、自定义背景、独立数字键盘与三类符号 | 适配实体键盘，横排候选与浅深色样式 |
-| 在线版本检查 | 当前没有 | “隐私”页手动检查 GitHub 正式发布版 |
+| 查看完整译文 | 长按译文 | 右键在原卡片展开，超长时滚动 |
+| 撤回替换 | 5 秒内撤销，输入位置须仍有效 | 再点同一译文区域，输入位置改变后失效 |
+| 外观 | 主题、自定义背景、独立数字与三类符号 | 实体键盘输入，横排候选与译文卡片 |
+| 在线更新 | 隐私 → 检查更新 → 下载并安装 | 隐私 → 检查更新 → 下载并安装 |
 
-目前不含离线整句翻译模型，也没有图片或动图表情收藏。词库用于中文输入，不等同于中英翻译模型。Windows 尚未实现与安卓一致的下一词预测。
+目前不含离线整句翻译模型或图片/动图表情收藏。输入词库不等同于中英翻译模型；Windows 的下一词预测也未达到安卓相同的体验。
 
-## 快速开始
+## 快速使用
 
-1. 下载对应安装包并完成安装，启用并切换到言渡。
-2. 打开应用设置，在“翻译”中分别填写接口地址、模型名称和 API 密钥。`sk-` 开头的密钥应填入密钥栏。
-3. 测试接口，然后在普通输入框中输入中文。接口调用可能按服务商规则收费。
-4. 点击译文替换；小喇叭用于朗读。未配置接口时保留普通中文输入。
+1. 安装并切换到言渡，在应用“翻译”页分别填写接口地址、模型和密钥。`sk-` 开头的内容填入密钥栏。
+2. 点击“验证连接”。接口调用可能按服务商规则收费。
+3. 输入中文后查看译文，点击替换；小喇叭用于朗读。未配置接口时作为普通输入法使用。
 
-Windows 的设置可从开始菜单或任务栏输入法图标的右键菜单打开。安装器支持首次自选路径，升级沿用旧路径，保留已保存的 API 配置。
+Windows 设置可从任务栏输入法图标右键菜单或开始菜单打开。首次安装可自选目录，升级保留旧路径和 API 配置。
+
+## 在线更新
+
+两端都内置 `xici7355/yandu-ime`，只在手动检查时请求 GitHub，不发送输入内容或 AI 密钥。下载按平台和设备架构选择附件，不会把另一端的安装包当作更新。
+
+下载安装包会校验大小与 SHA-256。Android 还会核对包名、版本、架构和签名，再交给系统确认安装；Windows 升级沿用原目录。更新不静默安装，也不清空个人配置。
+
+GitHub 无法连接时可以稍后重试或从发布页下载，不影响普通输入。Android 首次自行安装更新时，需要在系统页面允许言渡作为安装来源。
 
 ## 源码与维护
 
 ```text
-android/       Android 应用、构建逻辑与测试
-windows/       小狼毫分支、翻译助手、安装程序及测试
+android/       Fcitx5 Android 分支、界面与更新模块
+windows/       小狼毫分支、翻译助手、安装程序及更新模块
 docs/          安装、构建、隐私与发布说明
-tools/         发布前检查工具
-DEPENDENCIES.json  上游提交及子模块版本
+tools/         发布前敏感文件检查
+DEPENDENCIES.json  上游提交及固定依赖
 ```
 
-安装包通过 Releases 发布，不放入 Git 历史。源码包含固定版本的 Git 子模块；GitHub 自动生成的源码 ZIP 不包含子模块内容，构建前需初始化依赖。
+[构建 Android](docs/BUILD-ANDROID.md) · [构建 Windows](docs/BUILD-WINDOWS.md) · [维护与发布](docs/RELEASING.md) · [隐私说明](docs/PRIVACY.md)
 
-- [构建 Android](docs/BUILD-ANDROID.md)
-- [构建 Windows](docs/BUILD-WINDOWS.md)
-- [维护与发布](docs/RELEASING.md)
-- [隐私与敏感文件](docs/PRIVACY.md)
+安装包在 Releases 分发，不写入 Git 历史。源码 ZIP 不包含 Git 子模块内容，构建前须初始化固定依赖；个人配置、签名私钥和恢复密码均不公开。
 
-## 验证范围
+## 验证与许可
 
-Windows 0.3.3 完成了本机升级、原路径与 API 配置保留检查，以及 x64/x86 原生输入回归。更新逻辑经隔离发布数据测试，并已实网验证本仓库最新版本读取、安装包下载与 SHA-256 校验。当前只有首次发布，跨版本在线升级仍需在下一次发布时验收。
+本版在发布前验证输入、翻译保护、更新校验及覆盖升级。具体结果见 [验证记录](docs/PUBLICATION-VERIFICATION.md)，不据此承诺全部系统、设备和应用兼容。
 
-Android 第7版完成 ARM64/x86_64 构建和模拟器回归，没有进行真实付费 API 的延迟验收。语音效果、震感和不同厂商应用的体验需要实机确认。
-
-两端都不能据此保证所有应用兼容。遇到问题可提交 Issue，请先移除密钥和私人输入内容。
-
-## 开源基础与许可
-
-Android 沿用 [Fcitx5 Android](https://github.com/fcitx5-android/fcitx5-android) 的 LGPL-2.1-or-later 许可；Windows 小狼毫分支遵循 [GPL-3.0](windows/LICENSE.txt)。词库及其他依赖保留各自的许可。详见 [许可说明](LICENSE.md) 与 [第三方组件](docs/THIRD-PARTY.md)。
+Android 基于 [Fcitx5 Android](https://github.com/fcitx5-android/fcitx5-android)，Windows 基于 [Rime 小狼毫](https://github.com/rime/weasel)。原版权声明和 LGPL/GPL 许可保留，词库及其他组件按各自许可使用。详见 [许可说明](LICENSE.md) 与 [第三方组件](docs/THIRD-PARTY.md)。

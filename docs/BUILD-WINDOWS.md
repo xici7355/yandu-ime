@@ -1,6 +1,6 @@
 # Windows 构建
 
-当前应用版本 0.3.3。构建使用 PowerShell 7；安装脚本以带 BOM 的 UTF-8 打包，兼容 Windows PowerShell 5.1。
+当前应用版本 1.0.0。构建使用 PowerShell 7；安装脚本以带 BOM 的 UTF-8 打包，兼容 Windows PowerShell 5.1。
 
 ## 工具
 
@@ -15,7 +15,7 @@
 
 原交付使用 Rime 官方 `33e7814` Windows MSVC 库，源码对应 `33e78140250125871856cdc5b42ddc6a5fcd3cd4`。该依赖包不是应用安装包，不必让普通用户下载。
 
-从 [Windows 发布页](https://github.com/xici7355/yandu-ime/releases/tag/v0.3.3) 下载 `Yandu-Windows-RimeSDK-33e7814.zip` 并核对同页 SHA-256。这是原本机使用的四个官方开发归档，不含用户配置。各归档的哈希固定在 `docs/windows-rime-sdk.json`。
+从 [Windows 发布页](https://github.com/xici7355/yandu-ime/releases/tag/v1.0.0) 下载 `Yandu-Windows-RimeSDK-33e7814.zip` 并核对同页 SHA-256。这是原本机使用的四个官方开发归档，不含用户配置。各归档的哈希固定在 `docs/windows-rime-sdk.json`。
 
 在 `windows/` 中运行：
 

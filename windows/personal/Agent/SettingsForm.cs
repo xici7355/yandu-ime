@@ -33,7 +33,7 @@ namespace PersonalIme {
    introduction.Controls.Add(new Label{Text="落笔此岸，言达彼岸。",Font=new Font("Microsoft YaHei UI",10),ForeColor=Palette.Secondary,AutoSize=true,Left=81,Top=43});
    layout.Controls.Add(introduction,0,0);layout.SetColumnSpan(introduction,1);
    var nav=new FlowLayoutPanel{Dock=DockStyle.Fill,WrapContents=false,FlowDirection=FlowDirection.LeftToRight,Padding=new Padding(0,4,0,4)};layout.Controls.Add(nav,0,1);
-   var tabs=new Panel {Dock=DockStyle.Fill,BackColor=Palette.Surface};layout.Controls.Add(tabs,0,2);
+   var tabs=new Panel {Dock=DockStyle.Fill,BackColor=Palette.Background};layout.Controls.Add(tabs,0,2);
    var keyboard=Page(tabs,"键盘");
    AddText(keyboard,"中文输入",22,20,550,28,true);
    AddText(keyboard,"全拼中文＋英文。通过 Win＋空格切换输入法，Shift 切换中英文。\r\n支持整句组合，本地学习已选词句并调整候选排序。",22,60,540,65,false);
@@ -63,19 +63,19 @@ namespace PersonalIme {
    status.SetBounds(22,415,550,44);translate.Controls.Add(status);
    var privacy=Page(tabs,"隐私");
    pause.Text="暂停联网翻译，仅作普通输入法";pause.Checked=config.PauseTranslation;pause.SetBounds(22,25,550,35);privacy.Controls.Add(pause);
-   AddText(privacy,"API 密钥由 Windows 当前用户加密保存。\r\n翻译原文和译文不写入诊断日志。\r\n翻译缓存仅驻留内存，最多 128 条，退出后清除。\r\n输入法词频学习由小狼毫本地管理。\r\n密码框禁用翻译；只向你配置的 AI 服务发送待译文本。",22,85,550,175,false);
-   Button(privacy,"清空翻译缓存",22,285,170).Click+=delegate {translator.Clear();MessageBox.Show(this,"翻译缓存已清空。");};
-   AddText(privacy,"版本与更新",22,350,550,30,true);
-   AddText(privacy,"当前版本："+Updates.CurrentText,22,393,550,25,false);
-   AddText(privacy,"更新源：言渡官方 GitHub 仓库",22,432,550,26,false);
-   AddText(privacy,"手动检查正式版本。下载后校验文件，确认后安装，保留原路径和 API 配置。",22,470,550,50,false);
-   var checkUpdate=Button(privacy,"检查更新",22,540,135);
-   var downloadUpdate=Button(privacy,"下载并更新",171,540,145);downloadUpdate.Enabled=false;
-   var releasePage=Button(privacy,"查看发布页",330,540,145);releasePage.Enabled=true;
-   updateStatus.SetBounds(22,596,550,85);updateStatus.ForeColor=Palette.Text;privacy.Controls.Add(updateStatus);
+   AddText(privacy,"API 密钥由 Windows 当前用户加密保存。\r\n翻译原文和译文不写入诊断日志。\r\n翻译缓存仅驻留内存，最多 128 条，退出后清除。\r\n输入法词频学习由小狼毫本地管理。\r\n密码框禁用翻译；只向你配置的 AI 服务发送待译文本。",22,70,680,110,false);
+   Button(privacy,"清空翻译缓存",22,195,170).Click+=delegate {translator.Clear();MessageBox.Show(this,"翻译缓存已清空。");};
+   AddText(privacy,"版本与更新",22,250,550,30,true);
+   AddText(privacy,"当前版本："+Updates.CurrentText,22,290,550,25,false);
+   AddText(privacy,"更新源：言渡官方 GitHub 仓库",22,327,550,26,false);
+   AddText(privacy,"手动检查正式版本。下载后校验文件，确认后安装，保留原路径和 API 配置。",22,364,680,42,false);
+   var checkUpdate=Button(privacy,"检查更新",22,420,135);
+   var downloadUpdate=Button(privacy,"下载并更新",171,420,145);downloadUpdate.Enabled=false;
+   var releasePage=Button(privacy,"查看发布页",330,420,145);releasePage.Enabled=true;
+   updateStatus.SetBounds(22,473,680,65);updateStatus.ForeColor=Palette.Text;privacy.Controls.Add(updateStatus);
    checkUpdate.Click+=async delegate{
     try{
-     checkUpdate.Enabled=downloadUpdate.Enabled=releasePage.Enabled=false;availableRelease=null;updateStatus.Text="正在检查 GitHub 正式发布版本……";
+     checkUpdate.Enabled=downloadUpdate.Enabled=releasePage.Enabled=false;availableRelease=null;updateStatus.Text="正在检查 GitHub 正式发布版本……";privacy.ScrollControlIntoView(updateStatus);
      var release=await updates.Check(lifetime.Token);if(IsDisposed)return;availableRelease=release;releasePage.Enabled=true;
      if(release.Version<=Updates.CurrentVersion){updateStatus.Text="当前已是最新版本（"+Updates.CurrentText+"）。";return;}
      updateStatus.Text="发现新版 "+release.tag_name+(release.Installer==null?"，维护者尚未上传 Windows 安装包。":"，可下载后确认安装。");downloadUpdate.Enabled=release.Installer!=null;
@@ -112,7 +112,7 @@ namespace PersonalIme {
    Settings.ChatUri(endpoint.Text);if(String.IsNullOrWhiteSpace(model.Text))throw new ArgumentException("请填写模型名称。");
    var value=new Settings {Endpoint=endpoint.Text.Trim().TrimEnd('/'),Model=model.Text.Trim(),Voice=voice.SelectedIndex>0?(string)voice.SelectedItem:"",SpeechRate=rate.Value,SpeechVolume=volume.Value,PauseTranslation=pause.Checked};value.SetKey(key.Text);return value;
   }
-  static Panel Page(Panel tabs,string title){var page=new Panel{Tag=title,Dock=DockStyle.Fill,Visible=false,BackColor=Palette.Surface,ForeColor=Palette.Text};tabs.Controls.Add(page);return page;}
+  static Panel Page(Panel tabs,string title){var page=new SoftPanel{Tag=title,Dock=DockStyle.Fill,Visible=false,BackColor=Palette.Surface,ForeColor=Palette.Text};tabs.Controls.Add(page);return page;}
   static void LabelField(Control root,string title,TextBox box,int y){AddText(root,title,22,y,520,25,false);var surface=new SoftPanel{Left=22,Top=y+27,Width=520,Height=43,BackColor=Palette.Background};box.SetBounds(12,9,496,28);box.Font=new Font("Microsoft YaHei UI",11);box.BorderStyle=BorderStyle.None;box.BackColor=Palette.Background;box.ForeColor=Palette.Text;surface.Controls.Add(box);root.Controls.Add(surface);}
   static void AddText(Control root,string text,int x,int y,int w,int h,bool heading){root.Controls.Add(new Label{Text=text,Left=x,Top=y,Width=w,Height=h,ForeColor=heading?Palette.AccentText:Palette.Text,Font=new Font("Microsoft YaHei UI",heading?14:10)});}
   static Button Button(Control root,string text,int x,int y,int width){var b=new SoftButton{Text=text,Left=x,Top=y,Width=width,Height=38,BackColor=Color.FromArgb(174,255,50),ForeColor=Color.Black};root.Controls.Add(b);return b;}

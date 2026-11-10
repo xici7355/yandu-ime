@@ -81,6 +81,7 @@ class CompactTranslationTest {
             }
         }
         val context = instrumentation.targetContext
+        selectTestIme()
         val prefs = context.getSharedPreferences("translation", Context.MODE_PRIVATE)
         val original = prefs.all
         TranslationCache.shared.clear()

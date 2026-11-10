@@ -1,6 +1,6 @@
 # Android 构建
 
-当前源码对应第7版，`0.1.3-personal.7`。首次公开整理没有重新签名已有 APK。
+当前源码对应正式 V1.0，`1.0.0`。本次重新构建 ARM64 与 x86_64 安装包，沿用原签名以支持覆盖更新。
 
 ## 环境与依赖
 
@@ -30,7 +30,7 @@ $env:BUILD_ABI = 'arm64-v8a'
 
 Windows 的旧原生工具不支持某些非 ASCII 项目路径；建议将仓库克隆到英文路径，或使用 `tools/build-debug.ps1` 中的临时盘符映射。该辅助脚本需按自己电脑指定 Android Studio 路径，ECM/Gettext 仍需先安装。
 
-输出位于 `app/build/outputs/apk/debug/`。模拟器可把 BUILD_ABI 改为 `x86_64`。其他架构未作为本次手机发布包交付。
+输出位于 `app/build/outputs/apk/debug/`。模拟器可把 BUILD_ABI 改为 `x86_64`。本次发布 ARM64 和 x86_64，其他架构未交付。
 
 ## 测试
 
@@ -43,8 +43,10 @@ Windows 的旧原生工具不支持某些非 ASCII 项目路径；建议将仓�
 
 ## 签名
 
-已发布 APK 为现有 debug 变体，包名 `personal.translate.ime.debug`，其原私钥仅由维护者本地保存。新电脑自行生成的 debug 密钥无法覆盖原发布包。
+正式 APK 的内部构建变体保留历史兼容设置，应用可调试标记关闭；包名 `personal.translate.ime.debug`，其原私钥仅由维护者本地保存。新电脑自行生成的 debug 密钥无法覆盖原发布包。
 
 release 构建已支持 `SIGN_KEY_FILE`、`SIGN_KEY_PWD`、`SIGN_KEY_ALIAS` 等环境变量，或相应 Gradle 项目属性。私钥应保存在仓库外；不要将真实密码写入命令示例、源码或公开 CI 配置。若改变变体，须同时考虑 `.debug` 包名后缀，不能把包名不同的构建当作覆盖更新。
 
-本次只验证公开目录的源码组织、依赖引用及敏感文件排除；没有在全新电脑重新跑完整 Android 原生编译。原发布包的构建与模拟器验证范围见 CHANGELOG。
+本次使用本机已有依赖缓存完成两种架构的完整应用构建，构建代码与公开源码对应；未在全新电脑验证无缓存重建。模拟器验证范围见 PUBLICATION-VERIFICATION.md。
+
+更新下载专项测试需要先运行 `tools/prepare-update-test-fixtures.ps1` 生成仅供 instrumentation 使用的签名 APK；按脚本要求在本地环境提供签名密码。生成物受 Git 忽略规则保护，不得上传或作为应用安装。这些无功能的未来版本夹具只供包校验测试，不能覆盖真实应用。
