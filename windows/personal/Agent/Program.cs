@@ -110,6 +110,7 @@ namespace PersonalIme {
   readonly System.Windows.Forms.Timer debounce=new System.Windows.Forms.Timer(),watch=new System.Windows.Forms.Timer();
   TranslationJob job;SettingsForm settingsWindow;Snapshot snapshot;
   SelectionMonitor selectionMonitor;ReadingResult readingWindow;bool capturing;
+  ScreenTranslation screenTranslation;
   bool captureHotkey;
   IntPtr previewForeground,currentTarget,pendingTarget;DateTime lastSignal,pendingUntil;
   bool leased,composing,failed,speaking,applying,cleaned,pendingUndo;
@@ -162,10 +163,10 @@ namespace PersonalIme {
   }
   void ShowSelectedTranslation(SelectedText selected){ResetTranslation();ShowReading(selected.Text,null);}
   void ShowReading(string text,Func<CancellationToken,Task<string>> ocr){if(readingWindow!=null&&!readingWindow.IsDisposed)readingWindow.Close();readingWindow=new ReadingResult(config,translator,text,ocr);readingWindow.Show();readingWindow.Activate();}
-  async void CaptureTranslation(){if(capturing)return;capturing=true;ResetTranslation();if(selectionMonitor!=null)selectionMonitor.Hide();if(readingWindow!=null&&!readingWindow.IsDisposed)readingWindow.Hide();
+  async void CaptureTranslation(){if(capturing)return;capturing=true;ResetTranslation();if(selectionMonitor!=null)selectionMonitor.Hide();if(readingWindow!=null&&!readingWindow.IsDisposed)readingWindow.Hide();if(screenTranslation!=null&&!screenTranslation.IsDisposed)screenTranslation.Hide();
    try{await Task.Delay(160);if(cleaned||IsDisposed)return;var bounds=SystemInformation.VirtualScreen;using(var bitmap=CaptureOverlay.CaptureDesktop(bounds))using(var overlay=new CaptureOverlay(bitmap,bounds)){
-     if(overlay.ShowDialog()==DialogResult.OK){var captured=overlay.Captured;ShowReading("",token=>LocalOcr.Recognize(captured,token));}
-     else if(readingWindow!=null&&!readingWindow.IsDisposed)readingWindow.Show();
+     if(overlay.ShowDialog()==DialogResult.OK){overlay.Captured.Dispose();if(screenTranslation!=null&&!screenTranslation.IsDisposed)screenTranslation.Close();screenTranslation=new ScreenTranslation(config,translator,new Bitmap(bitmap),bounds,overlay.ScreenRegion,value=>{config.CaptureComparison=value;try{config.Save();}catch{}});screenTranslation.Show();screenTranslation.Activate();}
+     else{if(screenTranslation!=null&&!screenTranslation.IsDisposed)screenTranslation.Show();else if(readingWindow!=null&&!readingWindow.IsDisposed)readingWindow.Show();}
     }
    }catch{MessageBox.Show("无法截取屏幕，请退出受保护桌面后重试。","言渡截屏翻译",MessageBoxButtons.OK,MessageBoxIcon.Information);}
    finally{capturing=false;}
@@ -294,7 +295,7 @@ namespace PersonalIme {
   void CancelRequest(){var old=job;job=null;if(old!=null)old.Cancel.Cancel();}
   void ResetTranslation(){ResetTranslationReason("context_cleared");}
   void ResetTranslationReason(string reason){wechatState=null;wechatRead=null;wechatClearPending=false;if(currentTarget!=IntPtr.Zero)Note(reason);debounce.Stop();CancelRequest();snapshot=null;currentTarget=previewForeground=IntPtr.Zero;translated=translatedSource="";failed=composing=applying=false;undoWindow=IntPtr.Zero;undoSource=undoTarget="";panel.Original.Text=panel.Translation.Text=panel.Hint.Text="";panel.UndoAvailable=false;panel.Speaker.Visible=false;panel.Hide();StopSpeech();}
-  void Cleanup(){if(cleaned)return;cleaned=true;if(captureHotkey){Native.UnregisterHotKey(Handle,1101);captureHotkey=false;}if(selectionMonitor!=null)selectionMonitor.Dispose();if(readingWindow!=null&&!readingWindow.IsDisposed)readingWindow.Close();watch.Dispose();debounce.Dispose();CancelRequest();tray.Visible=false;tray.Dispose();speech.SpeakAsyncCancelAll();speech.Dispose();panel.Dispose();translator.Dispose();}
+  void Cleanup(){if(cleaned)return;cleaned=true;if(captureHotkey){Native.UnregisterHotKey(Handle,1101);captureHotkey=false;}if(selectionMonitor!=null)selectionMonitor.Dispose();if(readingWindow!=null&&!readingWindow.IsDisposed)readingWindow.Close();if(screenTranslation!=null&&!screenTranslation.IsDisposed)screenTranslation.Close();watch.Dispose();debounce.Dispose();CancelRequest();tray.Visible=false;tray.Dispose();speech.SpeakAsyncCancelAll();speech.Dispose();panel.Dispose();translator.Dispose();}
   protected override void OnFormClosed(FormClosedEventArgs e){Cleanup();base.OnFormClosed(e);}
   protected override void Dispose(bool disposing){if(disposing)Cleanup();base.Dispose(disposing);}
  }

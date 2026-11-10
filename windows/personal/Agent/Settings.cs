@@ -14,6 +14,7 @@ namespace PersonalIme {
   public int SpeechVolume = 90;
   public bool PauseTranslation = false;
   public bool SelectionTranslation = true;
+  public bool CaptureComparison = false;
   public static readonly string Folder = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "PersonalTranslateIme");
   public static readonly string FilePath = Path.Combine(Folder, "settings.json");
   public static Settings Load() {

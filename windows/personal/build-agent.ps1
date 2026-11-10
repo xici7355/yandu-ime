@@ -1,4 +1,4 @@
-﻿param([switch]$Test,[switch]$UiTest,[switch]$RaceTest,[switch]$UpdateTest,[switch]$UpdateUiTest,[switch]$ReadingTest)
+﻿param([switch]$Test,[switch]$UiTest,[switch]$RaceTest,[switch]$UpdateTest,[switch]$UpdateUiTest,[switch]$ReadingTest,[switch]$ScreenTest,[switch]$SkipCaptureMouseTest)
 $ErrorActionPreference='Stop'
 $root=Split-Path $PSScriptRoot -Parent
 Set-Location $root
@@ -59,6 +59,14 @@ if($ReadingTest){
  $testSources=Get-ChildItem "$PSScriptRoot/Tests/CoreTests.cs","$PSScriptRoot/Tests/ReadingTests.cs" | ForEach-Object FullName
  & $compiler /nologo /utf8output /target:exe /main:ReadingTests "/out:$out/ReadingTests.exe" @references @sources @testSources
  if($LASTEXITCODE){throw 'Reading test compilation failed'}
- & "$out/ReadingTests.exe"
+ if($SkipCaptureMouseTest){& "$out/ReadingTests.exe" --no-desktop}else{& "$out/ReadingTests.exe"}
  if($LASTEXITCODE){throw 'Reading translation tests failed'}
+}
+
+if($ScreenTest){
+ $testSources=Get-ChildItem "$PSScriptRoot/Tests/CoreTests.cs","$PSScriptRoot/Tests/ScreenTranslationTests.cs" | ForEach-Object FullName
+ & $compiler /nologo /utf8output /target:exe /main:ScreenTranslationTests "/out:$out/ScreenTranslationTests.exe" @references @sources @testSources
+ if($LASTEXITCODE){throw 'Screenshot overlay tests compilation failed'}
+ if($SkipCaptureMouseTest){& "$out/ScreenTranslationTests.exe" --no-mouse}else{& "$out/ScreenTranslationTests.exe"}
+ if($LASTEXITCODE){throw 'Screenshot overlay tests failed'}
 }

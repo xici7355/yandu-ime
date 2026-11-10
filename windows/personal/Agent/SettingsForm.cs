@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Drawing;
 using System.Diagnostics;
 using System.IO;
@@ -65,7 +65,7 @@ namespace PersonalIme {
    status.SetBounds(22,415,550,44);translate.Controls.Add(status);
    AddText(translate,"阅读翻译",22,480,550,28,true);
    selectionTranslation.Text="划词后显示“译”按钮，点击才发送翻译";selectionTranslation.Checked=config.SelectionTranslation;selectionTranslation.SetBounds(22,520,650,32);translate.Controls.Add(selectionTranslation);
-   AddText(translate,"划词功能读取软件公开的文字选区；密码框不读取。\r\n截屏在本机识别文字，只将识别原文发送到已配置的翻译接口。\r\n截图结果显示原文和英文，可复制，不提供朗读。",22,562,680,86,false);
+   AddText(translate,"截图与划词自动中英互译；密码框不读取。\r\n截屏在本机识别，默认原位覆盖译文，对照开关可保留原图。\r\n只将待译文字发送到配置的接口；截图可复制，不提供朗读。",22,562,680,86,false);
    Button(translate,"截屏翻译",22,660,150).Click+=delegate{if(ScreenTranslationRequested!=null){Close();ScreenTranslationRequested();}};
    AddText(translate,"截图快捷键：Ctrl＋Alt＋Z。也可右键任务栏言渡图标，选择“截屏翻译”。",22,710,680,45,false);
    var privacy=Page(tabs,"隐私");

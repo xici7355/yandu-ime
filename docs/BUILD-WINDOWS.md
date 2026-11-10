@@ -1,6 +1,6 @@
 # Windows 构建
 
-当前 Windows 开发版本 1.1.0（V1.0 发布不变）。构建使用 PowerShell 7；安装脚本以带 BOM 的 UTF-8 打包，兼容 Windows PowerShell 5.1。
+当前 Windows 开发版本 1.1.1（V1.0 发布不变）。构建使用 PowerShell 7；安装脚本以带 BOM 的 UTF-8 打包，兼容 Windows PowerShell 5.1。
 
 ## 工具
 
@@ -50,3 +50,5 @@ pwsh -File personal/build.ps1 -Package
 运行 `personal/prepare-ocr.ps1` 准备哈希固定的 OCR 组件。构建时通过 `YANDU_VC_REDIST_DIR` 指定 `14.44.35112/x64/Microsoft.VC143.CRT` 运行库目录。安装包部署所需 CRT 到应用目录；来源与哈希记录在 `personal/ocr-dependencies.json`，不要从 System32 复制 DLL。参见 [Microsoft 的本地部署说明](https://learn.microsoft.com/en-us/cpp/windows/walkthrough-deploying-a-visual-cpp-application-to-an-application-local-folder)。
 
 `personal/build-agent.ps1 -ReadingTest` 执行实际 OCR 与独立窗口交互测试。Chrome 已安装时，可另运行 `personal/bin/ReadingTests.exe --browser` 检查隔离的本地网页，不使用已有浏览器资料。
+
+V1.1.1 原位截图结果可通过 `personal/build-agent.ps1 -ScreenTest` 检查。`-SkipCaptureMouseTest` 避免重复移动鼠标和争抢焦点，仅用于与先前独立鼠标检查结合；不表示物理选区测试已经运行。`ScreenTranslationTests.exe --live-auto` 会读取本机 API 并发送两条固定测试文字，可能产生接口费用，不用于无人值守常规测试。

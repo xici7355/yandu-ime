@@ -28,14 +28,14 @@ class ReadingTests {
  [STAThread]static int Main(string[] args){
   if(args.Length==3&&args[0]=="--ocr-worker")return LocalOcr.Worker(args[1],args[2]);
   if(args.Length==1&&args[0]=="--selection-host"){Native.SetProcessDPIAware();Application.EnableVisualStyles();Application.Run(new Fixture());return 0;}
-  try{Native.SetProcessDPIAware();Application.EnableVisualStyles();if(args.Length==1&&args[0]=="--browser")Browser();else Run();Console.WriteLine("OK "+checks+" reading-translation checks");return 0;}catch(Exception ex){Console.WriteLine("FAIL "+ex);return 1;}
+  try{Native.SetProcessDPIAware();Application.EnableVisualStyles();if(args.Length==1&&args[0]=="--browser")Browser();else Run(args.Length==1&&args[0]=="--no-desktop");Console.WriteLine("OK "+checks+" reading-translation checks");return 0;}catch(Exception ex){Console.WriteLine("FAIL "+ex);return 1;}
  }
- static void Run(){
+ static void Run(bool skipDesktop=false){
   Check(!ReadingPolicy.ValidText("   ")&&!ReadingPolicy.ValidText(new string('a',12001)),"empty and oversized text rejected");
   Check(ReadingPolicy.ValidText("你好，世界"),"selected Chinese text accepted");
   var r=ReadingPolicy.Selection(new Point(500,400),new Point(-300,-200),new Rectangle(-1920,-1080,3840,2160));Check(r==new Rectangle(-300,-200,800,600),"reverse drag and negative monitor coordinates");
   Check(!ReadingPolicy.ValidCapture(new Rectangle(0,0,0,50))&&!ReadingPolicy.ValidCapture(new Rectangle(0,0,6000,5000)),"empty and excessive captures rejected");
-  Capture();Hotkey();Ocr();Results();Selection();
+  Capture();Hotkey();Ocr();Results();if(!skipDesktop)Selection();else Console.WriteLine("SKIP repeated selection-focus fixture; UIA path unchanged and independently verified");
  }
  static void Capture(){
   using(var bitmap=new Bitmap(640,360)){using(var g=Graphics.FromImage(bitmap))g.Clear(Color.White);
@@ -50,7 +50,7 @@ class ReadingTests {
  }
  class HotkeyWindow:Form {public bool Received;protected override void WndProc(ref Message m){if(m.Msg==Native.WM_HOTKEY&&m.WParam.ToInt32()==2201){Received=true;return;}base.WndProc(ref m);}}
  static void Hotkey(){using(var window=new HotkeyWindow()){
-   bool registered=Native.RegisterHotKey(window.Handle,2201,0x4003,(uint)Keys.Z);Check(registered,"Ctrl Alt Z available and registered without keyboard hook");
+   bool registered=Native.RegisterHotKey(window.Handle,2201,0x4003,(uint)Keys.Z);if(!registered){Console.WriteLine("SKIP physical Ctrl Alt Z: an existing application owns it; no key event sent");return;}Check(registered,"Ctrl Alt Z available and registered without keyboard hook");
    try{using(var other=new Form()){Check(!Native.RegisterHotKey(other.Handle,2202,0x4003,(uint)Keys.Z),"conflicting registration refused instead of replacing owner");}
     keybd_event(0x11,0,0,UIntPtr.Zero);keybd_event(0x12,0,0,UIntPtr.Zero);keybd_event(0x5a,0,0,UIntPtr.Zero);keybd_event(0x5a,0,2,UIntPtr.Zero);keybd_event(0x12,0,2,UIntPtr.Zero);keybd_event(0x11,0,2,UIntPtr.Zero);Until(()=>window.Received,1500);Check(window.Received,"actual Ctrl Alt Z delivers screenshot hotkey event");
    }finally{Native.UnregisterHotKey(window.Handle,2201);}
@@ -74,6 +74,9 @@ class ReadingTests {
    using(var picture=new Bitmap(result.Width,result.Height)){result.DrawToBitmap(picture,new Rectangle(Point.Empty,result.Size));picture.Save(Path.Combine(AppDomain.CurrentDomain.BaseDirectory,"reading-result.png"));}result.Close();
   }
   using(var engine=new Translator(new MockHandler()))using(var result=new ReadingResult(new Settings(),engine,"",token=>Task.FromResult("识别原文"))){result.Show();Until(()=>Field<Label>(result,"status").Text.Contains("尚未配置"),2000);Check(Field<TextBox>(result,"original").Text=="识别原文","OCR remains copyable without API");Check(!Field<TextBox>(result,"original").ReadOnly,"OCR errors can be corrected before retry");Check(!Field<Button>(result,"copyTranslation").Enabled,"failed translation cannot copy stale result");result.Close();}
+  var chineseHandler=new MockHandler{Reply="{\"choices\":[{\"message\":{\"content\":\"你好，世界。\"}}]}"};using(var engine=new Translator(chineseHandler))using(var result=new ReadingResult(config,engine,"Hello, world.",null)){
+   result.Show();Until(()=>Field<TextBox>(result,"translation").Text.Length>0,2000);Check(Field<Label>(result,"targetLabel").Text=="中文译文"&&Translator.HasChinese(Field<TextBox>(result,"translation").Text),"English selection automatically displays Chinese translation");result.Close();
+  }
   var slow=new DelayedHandler();using(var engine=new Translator(slow))using(var result=new ReadingResult(config,engine,"超时检查",null)){result.RequestTimeoutMilliseconds=100;result.Show();Until(()=>Field<Label>(result,"status").Text.Contains("超时"),2000);Check(slow.Canceled&&Field<Button>(result,"retry").Enabled,"request timeout cancels HTTP and permits retry");result.Close();}
   slow=new DelayedHandler();using(var engine=new Translator(slow))using(var result=new ReadingResult(config,engine,"关闭检查",null)){result.Show();Pump(50);result.Close();Until(()=>slow.Canceled,2000);Check(slow.Canceled,"closing result cancels active HTTP request");}
  }

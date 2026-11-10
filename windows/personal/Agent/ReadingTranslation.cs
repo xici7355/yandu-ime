@@ -53,31 +53,42 @@ namespace PersonalIme {
  }
 
  internal sealed class CaptureOverlay : Form {
-  readonly Bitmap image;readonly Rectangle desktop;Point start,current;bool dragging;
+  readonly Bitmap image,dimmed;readonly Rectangle desktop;Point start,current;bool dragging,finished;readonly System.Windows.Forms.Timer refresh=new System.Windows.Forms.Timer{Interval=16};
+  [DllImport("user32.dll")]static extern short GetAsyncKeyState(int key);
   public Bitmap Captured {get;private set;}
+  public Rectangle ScreenRegion {get;private set;}
   public CaptureOverlay(Bitmap source,Rectangle bounds){image=source;desktop=bounds;Text="言渡 · 框选截图";FormBorderStyle=FormBorderStyle.None;ShowInTaskbar=false;TopMost=true;StartPosition=FormStartPosition.Manual;Bounds=bounds;Cursor=Cursors.Cross;DoubleBuffered=true;KeyPreview=true;
-   KeyDown+=delegate(object s,KeyEventArgs e){if(e.KeyCode==Keys.Escape){DialogResult=DialogResult.Cancel;Close();}};
+   dimmed=new Bitmap(source.Width,source.Height,PixelFormat.Format24bppRgb);using(var g=Graphics.FromImage(dimmed)){g.DrawImageUnscaled(source,0,0);using(var shade=new SolidBrush(Color.FromArgb(105,0,0,0)))g.FillRectangle(shade,new Rectangle(Point.Empty,source.Size));}
+   refresh.Tick+=delegate{if(!dragging||finished)return;var point=PointToClient(Cursor.Position);if((GetAsyncKeyState(1)&0x8000)==0){Finish(point);return;}UpdatePoint(point);};
+   KeyDown+=delegate(object s,KeyEventArgs e){if(e.KeyCode==Keys.Escape)CancelSelection();};
   }
-  protected override void OnPaint(PaintEventArgs e){e.Graphics.DrawImageUnscaled(image,0,0);using(var shade=new SolidBrush(Color.FromArgb(105,0,0,0)))e.Graphics.FillRectangle(shade,ClientRectangle);
+  protected override void OnPaintBackground(PaintEventArgs e){}
+  protected override void OnPaint(PaintEventArgs e){e.Graphics.DrawImageUnscaled(dimmed,0,0);
    var r=ReadingPolicy.Selection(start,current,ClientRectangle);if(dragging&&r.Width>0&&r.Height>0){e.Graphics.DrawImage(image,r,r,GraphicsUnit.Pixel);using(var pen=new Pen(Color.FromArgb(174,255,50),2))e.Graphics.DrawRectangle(pen,r);}
    using(var font=new Font("Microsoft YaHei UI",12))using(var ink=new SolidBrush(Color.White))e.Graphics.DrawString("拖动框选文字区域 · Esc / 右键取消",font,ink,24,24);
   }
-  protected override void OnMouseDown(MouseEventArgs e){if(e.Button==MouseButtons.Right){DialogResult=DialogResult.Cancel;Close();return;}if(e.Button!=MouseButtons.Left)return;start=current=e.Location;dragging=true;Capture=true;Invalidate();}
-  protected override void OnMouseMove(MouseEventArgs e){if(dragging){current=e.Location;Invalidate();}}
-  protected override void OnMouseUp(MouseEventArgs e){if(!dragging||e.Button!=MouseButtons.Left)return;current=e.Location;dragging=false;Capture=false;var r=ReadingPolicy.Selection(start,current,ClientRectangle);if(!ReadingPolicy.ValidCapture(r)){Invalidate();return;}Captured=image.Clone(r,PixelFormat.Format24bppRgb);DialogResult=DialogResult.OK;Close();}
+  protected override void OnMouseDown(MouseEventArgs e){if(e.Button==MouseButtons.Right){CancelSelection();return;}if(e.Button!=MouseButtons.Left||finished)return;start=current=e.Location;dragging=true;Capture=true;refresh.Start();}
+  protected override void OnMouseMove(MouseEventArgs e){} // Poll latest physical position; queued moves never stretch the selection after release.
+  void UpdatePoint(Point point){if(point==current)return;var old=ReadingPolicy.Selection(start,current,ClientRectangle);current=point;var dirty=Rectangle.Union(old,ReadingPolicy.Selection(start,current,ClientRectangle));dirty.Inflate(3,3);Invalidate(dirty);}
+  protected override void OnMouseUp(MouseEventArgs e){if(e.Button==MouseButtons.Left)Finish(e.Location);}
+  protected override void OnMouseCaptureChanged(EventArgs e){base.OnMouseCaptureChanged(e);if(dragging&&!Capture){if((GetAsyncKeyState(1)&0x8000)!=0)CancelSelection();else Finish(PointToClient(Cursor.Position));}}
+  void CancelSelection(){finished=true;dragging=false;refresh.Stop();Capture=false;DialogResult=DialogResult.Cancel;Close();}
+  protected override void OnFormClosing(FormClosingEventArgs e){if(DialogResult!=DialogResult.OK){finished=true;dragging=false;refresh.Stop();Capture=false;}base.OnFormClosing(e);}
+  void Finish(Point point){if(!dragging||finished)return;current=point;dragging=false;refresh.Stop();Capture=false;var r=ReadingPolicy.Selection(start,current,ClientRectangle);if(!ReadingPolicy.ValidCapture(r)){Invalidate();return;}finished=true;ScreenRegion=new Rectangle(desktop.Left+r.Left,desktop.Top+r.Top,r.Width,r.Height);Captured=image.Clone(r,PixelFormat.Format24bppRgb);DialogResult=DialogResult.OK;Close();}
+  protected override void Dispose(bool disposing){if(disposing){refresh.Dispose();dimmed.Dispose();}base.Dispose(disposing);}
   public static Bitmap CaptureDesktop(Rectangle bounds){if((long)bounds.Width*bounds.Height>100000000)throw new InvalidOperationException("屏幕区域过大，请暂时减少屏幕数量后重试。");var image=new Bitmap(bounds.Width,bounds.Height,PixelFormat.Format24bppRgb);try{using(var g=Graphics.FromImage(image))g.CopyFromScreen(bounds.Location,Point.Empty,bounds.Size,CopyPixelOperation.SourceCopy);return image;}catch{image.Dispose();throw;}}
  }
 
  internal sealed class ReadingResult : Form {
   readonly Settings config;readonly Translator translator;readonly Func<CancellationToken,Task<string>> recognize;
   readonly CancellationTokenSource lifetime=new CancellationTokenSource();CancellationTokenSource request;
-  readonly TextBox original=new TextBox(),translation=new TextBox();readonly Label status=new Label();readonly Button retry=new SoftButton(),copyOriginal=new SoftButton(),copyTranslation=new SoftButton();
+  readonly TextBox original=new TextBox(),translation=new TextBox();readonly Label status=new Label(),targetLabel=new Label();readonly Button retry=new SoftButton(),copyOriginal=new SoftButton(),copyTranslation=new SoftButton();
   internal int RequestTimeoutMilliseconds=35000;
   public ReadingResult(Settings settings,Translator engine,string text,Func<CancellationToken,Task<string>> ocr){
    config=settings;translator=engine;recognize=ocr;Text=ocr==null?"言渡 · 划词翻译":"言渡 · 截屏翻译";Icon=Brand.Icon;StartPosition=FormStartPosition.CenterScreen;Size=new Size(780,650);MinimumSize=new Size(560,480);BackColor=Palette.Background;ForeColor=Palette.Text;Font=new Font("Microsoft YaHei UI",10);
    var layout=new TableLayoutPanel{Dock=DockStyle.Fill,Padding=new Padding(24),ColumnCount=1,RowCount=7};layout.ColumnStyles.Add(new ColumnStyle(SizeType.Percent,100));foreach(var h in new[]{48f,28f,0f,28f,0f,60f,48f})layout.RowStyles.Add(new RowStyle(h==0?SizeType.Percent:SizeType.Absolute,h==0?50:h));Controls.Add(layout);
    var heading=new Label{Text=Text,Font=new Font(Font.FontFamily,17,FontStyle.Bold),Dock=DockStyle.Fill,ForeColor=Palette.Text};layout.Controls.Add(heading,0,0);layout.Controls.Add(new Label{Text=ocr==null?"原文":"识别原文（可修正后重新翻译）",Dock=DockStyle.Fill},0,1);
-   Configure(original);original.ReadOnly=ocr==null;original.Text=text??"";layout.Controls.Add(original,0,2);layout.Controls.Add(new Label{Text="英文译文",Dock=DockStyle.Fill,Padding=new Padding(0,6,0,0)},0,3);Configure(translation);translation.ReadOnly=true;layout.Controls.Add(translation,0,4);
+   Configure(original);original.ReadOnly=ocr==null;original.Text=text??"";layout.Controls.Add(original,0,2);targetLabel.Text=Translator.ReadingTargetChinese(original.Text)?"中文译文":"英文译文";targetLabel.Dock=DockStyle.Fill;targetLabel.Padding=new Padding(0,6,0,0);layout.Controls.Add(targetLabel,0,3);Configure(translation);translation.ReadOnly=true;layout.Controls.Add(translation,0,4);
    var footer=new FlowLayoutPanel{Dock=DockStyle.Fill,Padding=new Padding(0,10,0,0),WrapContents=true};layout.Controls.Add(footer,0,5);
    retry.Text="重新翻译";copyOriginal.Text="复制原文";copyTranslation.Text="复制译文";foreach(var button in new[]{retry,copyOriginal,copyTranslation}){button.Size=new Size(115,34);button.BackColor=Color.FromArgb(174,255,50);button.ForeColor=Color.Black;footer.Controls.Add(button);}status.Dock=DockStyle.Fill;status.ForeColor=Palette.Secondary;layout.Controls.Add(status,0,6);
    copyOriginal.Click+=delegate{Copy(original.Text);};copyTranslation.Click+=delegate{Copy(translation.Text);};retry.Click+=async delegate{await Run(false);};Shown+=async delegate{await Run(recognize!=null);};FormClosed+=delegate{lifetime.Cancel();if(request!=null)request.Cancel();};
@@ -89,7 +100,7 @@ namespace PersonalIme {
    try{if(withOcr){status.Text="正在本机识别文字……";original.Text=await recognize(active.Token);}
     active.Token.ThrowIfCancellationRequested();if(!ReadingPolicy.ValidText(original.Text))throw new InvalidOperationException(String.IsNullOrWhiteSpace(original.Text)?"没有识别到文字，请重新框选清晰的文字区域。":"文字超过 12000 字，请缩小范围。");
     if(!config.Ready)throw new InvalidOperationException("翻译已暂停或尚未配置 API，请在言渡设置的翻译页配置。原文仍可复制。");
-    status.Text="正在翻译……";var result=await translator.Translate(config,original.Text,active.Token);active.Token.ThrowIfCancellationRequested();if(!IsDisposed){translation.Text=result;status.Text="翻译完成";copyTranslation.Enabled=true;}
+    targetLabel.Text=Translator.ReadingTargetChinese(original.Text)?"中文译文":"英文译文";status.Text=Translator.ReadingTargetChinese(original.Text)?"英 → 中 · 正在翻译……":"中 → 英 · 正在翻译……";var result=await translator.TranslateReading(config,original.Text,active.Token);active.Token.ThrowIfCancellationRequested();if(!IsDisposed){translation.Text=result;status.Text="翻译完成";copyTranslation.Enabled=true;}
    }catch(OperationCanceledException){if(!IsDisposed)status.Text="操作已取消或超时，可重试。";}
    catch(Exception ex){if(!IsDisposed)status.Text=ex is System.Net.Http.HttpRequestException?"无法连接翻译接口，请检查网络后重试。":ex.Message;}
    finally{request=null;active.Dispose();if(!IsDisposed)retry.Enabled=true;}
@@ -117,7 +128,7 @@ namespace PersonalIme {
     using(var engine=(IDisposable)Activator.CreateInstance(engineType,new object[]{Path.Combine(root,"tessdata"),"chi_sim+eng",Enum.Parse(modeType,"LstmOnly")}))
     using(var pix=(IDisposable)pixType.GetMethod("LoadFromMemory").Invoke(null,new object[]{File.ReadAllBytes(input)})){
      var process=engineType.GetMethod("Process",new[]{pixType,typeof(Nullable<>).MakeGenericType(pageMode)});
-     using(var page=(IDisposable)process.Invoke(engine,new object[]{pix,Enum.Parse(pageMode,"Auto")})){string text=(string)page.GetType().GetMethod("GetText").Invoke(page,null);File.WriteAllText(output,text,new System.Text.UTF8Encoding(false));}
+     string text="";foreach(var layout in new[]{"Auto","SparseText","SingleLine"}){using(var page=(IDisposable)process.Invoke(engine,new object[]{pix,Enum.Parse(pageMode,layout)})){text=(string)page.GetType().GetMethod("GetText").Invoke(page,null);}if(!String.IsNullOrWhiteSpace(text))break;}File.WriteAllText(output,text,new System.Text.UTF8Encoding(false));
     }return 0;
    }catch{return 2;}
   }
