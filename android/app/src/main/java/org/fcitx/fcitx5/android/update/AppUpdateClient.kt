@@ -121,9 +121,10 @@ class AppUpdateClient(private val open: (URL) -> HttpURLConnection = { it.openCo
             }
             check(received == asset.size) { "安装包下载不完整，请重试" }
             check(hex(digest.digest()) == asset.sha256) { "安装包校验失败，请重新下载" }
-            validatePackage(context, part, release.version)
             operation.ensureActive()
             check(part.renameTo(target)) { "无法保存安装包，请检查存储空间" }
+            validatePackage(context, target, release.version)
+            operation.ensureActive()
             progress(100)
             target
         } catch (e: Exception) { part.delete(); target.delete(); throw e }
