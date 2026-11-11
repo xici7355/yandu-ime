@@ -52,9 +52,9 @@ class UiTests {
   endpoint.Source="password=fixture";endpoint.Revision++;endpoint.Publish(agent.Handle);Pump(80);Check(!panel.Visible&&Field(agent,"snapshot")==null&&handler.Calls==0,"sensitive input clears preview before translation");endpoint.DestroyHandle();
  }}
  static void InlineExpansion(){using(var engine=new Translator(new MockHandler()))using(var agent=new Agent(new Settings(),engine,true)){
-  var panel=(PanelForm)Field(agent,"panel");var text="This translation stays beside the input field. Right-click to expand the remaining lines without opening another window. The keyboard focus stays in the original editor, and clicking the translation still replaces the matching source. ";
+  var panel=(PanelForm)Field(agent,"panel");Check(typeof(PanelForm).GetField("Original")==null,"input card has no duplicate original-text label");var text="This translation stays beside the input field. Right-click to expand the remaining lines without opening another window. The keyboard focus stays in the original editor, and clicking the translation still replaces the matching source. ";
   typeof(Agent).GetField("translated",BindingFlags.NonPublic|BindingFlags.Instance).SetValue(agent,text);panel.Translation.Text=text;panel.PositionAt(100,100);panel.ShowPassive();Pump(50);
-  var handle=panel.Handle;int initialHeight=panel.Height,forms=Application.OpenForms.Count;var foreground=Native.GetForegroundWindow();
+  panel.SavePreview("personal/bin/v212-compact-preview.png");var handle=panel.Handle;int initialHeight=panel.Height,forms=Application.OpenForms.Count;var foreground=Native.GetForegroundWindow();
   panel.Translation.InvokeMouse(MouseButtons.Right,20,40);Pump(30);
   Check(panel.Expanded&&panel.Height>initialHeight,"right-click expands existing translation card");
   Check(panel.Handle==handle&&Application.OpenForms.Count==forms,"expansion creates no separate window");

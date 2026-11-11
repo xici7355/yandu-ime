@@ -27,7 +27,7 @@ class UpdateTests {
  }
  static string Folder(){return Path.Combine(root,Guid.NewGuid().ToString("N"));}
  static async Task Run(){
-  Check(Updates.CurrentText=="2.1.1","current version from application assembly");
+  Check(Updates.CurrentText=="2.1.2","current version from application assembly");
   var originalSettings=new Settings{Endpoint="https://example.invalid/v1",Model="fixture-model"};originalSettings.SetKey("fixture-only-key");
   var serializer=new System.Web.Script.Serialization.JavaScriptSerializer();string legacy=serializer.Serialize(originalSettings);legacy=legacy.Substring(0,legacy.Length-1)+",\"UpdateRepository\":\"other/repository\"}";
   var migrated=serializer.Deserialize<Settings>(legacy);
@@ -38,7 +38,7 @@ class UpdateTests {
   Check(Updates.Repository("test/yandu")=="test/yandu","owner/repository accepted");
   foreach(string input in new[]{"https://evil.invalid/test/yandu","test/yandu?token=secret","test/yandu/releases","../test","test/.."}){await Reject(()=>Task.Run(()=>Updates.Repository(input)),"invalid repository rejected");}
   Check(Updates.ParseVersion("v1.10.0")>Updates.ParseVersion("v1.9.9"),"versions compared numerically");
-  Check(Updates.ParseVersion("v2.1.1")==Updates.CurrentVersion,"three-part tag equals installed four-part assembly version");
+  Check(Updates.ParseVersion("v2.1.2")==Updates.CurrentVersion,"three-part tag equals installed four-part assembly version");
   await Reject(()=>Task.Run(()=>Updates.ParseVersion("v9.0.0-beta")),"prerelease tag cannot become stable update");
   var handler=new Fake();using(var client=new Updates(handler)){
    var release=await client.Check("test/yandu",CancellationToken.None);Check(release.Installer!=null&&release.Version>Updates.CurrentVersion,"new stable x64 installer selected");

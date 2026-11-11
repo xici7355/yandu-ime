@@ -10,7 +10,7 @@ namespace PersonalIme {
   public void InvokeMouse(MouseButtons button,int x,int y){OnMouseClick(new MouseEventArgs(button,1,x,y,0));if(button==MouseButtons.Left)OnClick(EventArgs.Empty);}
  }
  internal sealed class PanelForm : IDisposable {
-  public readonly Label Original=new Label(),Hint=new Label();
+  public readonly Label Hint=new Label();
   public readonly ActionLabel Translation=new ActionLabel(),Speaker=new ActionLabel(),ScrollUp=new ActionLabel(),ScrollDown=new ActionLabel();
   public bool UndoAvailable;
   readonly Popup window;
@@ -19,7 +19,7 @@ namespace PersonalIme {
   static float SystemScale(){using(var g=Graphics.FromHwnd(IntPtr.Zero))return Math.Max(1,g.DpiX/96f);}
   public IntPtr Handle {get{return window.Handle;}}
   public bool Visible {get{return Native.IsWindowVisible(Handle);}}
-  public int Width {get{return (int)(530*scale);}} public int Height {get{return panelHeight>0?panelHeight:(int)(112*scale);}}
+  public int Width {get{return (int)(530*scale);}} public int Height {get{return panelHeight>0?panelHeight:(int)(89*scale);}}
   public bool Expanded {get;private set;}
   public int ScrollOffset {get{return scrollOffset;}}
   int left,top,anchorX,anchorY,panelHeight,fullTextHeight,scrollOffset;
@@ -35,13 +35,12 @@ namespace PersonalIme {
    }
   }
   public PanelForm(){
-   Original.SetBounds(18,8,490,21);Original.Font=new Font("Microsoft YaHei UI",9);Original.ForeColor=Palette.Secondary;
-   Translation.SetBounds(18,33,435,45);Translation.Font=new Font("Segoe UI",12);
-   Speaker.SetBounds(469,34,45,40);Speaker.Text="🔊";Speaker.Font=new Font("Segoe UI Emoji",18);
-   Hint.SetBounds(18,85,494,19);Hint.Font=new Font("Microsoft YaHei UI",8.5f);Hint.ForeColor=Palette.Secondary;
-   ScrollUp.SetBounds(469,80,22,24);ScrollDown.SetBounds(493,80,22,24);ScrollUp.Text="↑";ScrollDown.Text="↓";ScrollUp.Font=ScrollDown.Font=new Font("Segoe UI",12);ScrollUp.ForeColor=ScrollDown.ForeColor=Palette.Secondary;ScrollUp.Visible=ScrollDown.Visible=false;ScrollUp.Click+=delegate{Scroll(-3);};ScrollDown.Click+=delegate{Scroll(3);};
+   Translation.SetBounds(18,10,435,45);Translation.Font=new Font("Segoe UI",12);
+   Speaker.SetBounds(469,11,45,40);Speaker.Text="🔊";Speaker.Font=new Font("Segoe UI Emoji",18);
+   Hint.SetBounds(18,62,494,19);Hint.Font=new Font("Microsoft YaHei UI",8.5f);Hint.ForeColor=Palette.Secondary;
+   ScrollUp.SetBounds(469,57,22,24);ScrollDown.SetBounds(493,57,22,24);ScrollUp.Text="↑";ScrollDown.Text="↓";ScrollUp.Font=ScrollDown.Font=new Font("Segoe UI",12);ScrollUp.ForeColor=ScrollDown.ForeColor=Palette.Secondary;ScrollUp.Visible=ScrollDown.Visible=false;ScrollUp.Click+=delegate{Scroll(-3);};ScrollDown.Click+=delegate{Scroll(3);};
    Translation.ForeColor=Speaker.ForeColor=Palette.Text;
-   labels=new Label[]{Original,Translation,Speaker,Hint,ScrollUp,ScrollDown};
+   labels=new Label[]{Translation,Speaker,Hint,ScrollUp,ScrollDown};
    foreach(var label in labels){var b=label.Bounds;label.Bounds=new Rectangle((int)(b.X*scale),(int)(b.Y*scale),(int)(b.Width*scale),(int)(b.Height*scale));}
    window=new Popup(this);
    var region=Native.CreateRoundRectRgn(0,0,Width+1,Height+1,(int)(12*scale),(int)(12*scale));
@@ -54,7 +53,6 @@ namespace PersonalIme {
   }
   void DrawSurface(Graphics graphics){
     graphics.Clear(Palette.Surface);
-    using(var pen=new Pen(Palette.Dark?Color.FromArgb(62,70,64):Color.FromArgb(236,240,235)))graphics.DrawLine(pen,18*scale,30*scale,Width-18*scale,30*scale);
     graphics.TextRenderingHint=System.Drawing.Text.TextRenderingHint.ClearTypeGridFit;
     using(var format=new StringFormat{Trimming=StringTrimming.EllipsisCharacter,FormatFlags=StringFormatFlags.LineLimit})
     foreach(var label in labels){if(!label.Visible)continue;if(label==Speaker){DrawSpeaker(graphics);continue;}using(var brush=new SolidBrush(label.ForeColor)){
@@ -92,7 +90,7 @@ namespace PersonalIme {
     int maximum=Math.Max((int)(45*scale),Math.Min((int)(420*scale),area.Height-(int)(110*scale)));
     textHeight=Math.Max((int)(45*scale),Math.Min(fullTextHeight,maximum));
    }
-   Translation.Height=textHeight;Hint.Top=Expanded?Translation.Bottom+(int)(7*scale):(int)(85*scale);panelHeight=Expanded?Hint.Bottom+(int)(8*scale):(int)(112*scale);
+   Translation.Height=textHeight;Hint.Top=Expanded?Translation.Bottom+(int)(7*scale):(int)(62*scale);panelHeight=Expanded?Hint.Bottom+(int)(8*scale):(int)(89*scale);
    ScrollUp.Visible=ScrollDown.Visible=Expanded&&fullTextHeight>textHeight;
    var region=Native.CreateRoundRectRgn(0,0,Width+1,Height+1,(int)(12*scale),(int)(12*scale));if(region!=IntPtr.Zero&&!Native.SetWindowRgn(Handle,region,true))Native.DeleteObject(region);
    PositionAt(anchorX,anchorY);Native.InvalidateRect(Handle,IntPtr.Zero,false);
@@ -109,7 +107,7 @@ namespace PersonalIme {
   readonly SpeechSynthesizer speech=new SpeechSynthesizer();readonly NotifyIcon tray=new NotifyIcon();
   readonly System.Windows.Forms.Timer debounce=new System.Windows.Forms.Timer(),watch=new System.Windows.Forms.Timer();
   TranslationJob job;SettingsForm settingsWindow;Snapshot snapshot;
-  string registeredCaptureKey="";Action refreshCaptureMenu;AutomaticUpdates automaticUpdates;SelectionMonitor selectionMonitor;bool capturing;Task<SelectedText> selectionRead;
+  string registeredCaptureKey="";Action refreshCaptureMenu;AutomaticUpdates automaticUpdates;SelectionMonitor selectionMonitor;bool capturing;
   ScreenTranslation screenTranslation;
   bool captureHotkey;
   IntPtr previewForeground,currentTarget,pendingTarget;DateTime lastSignal,pendingUntil;
@@ -159,19 +157,19 @@ namespace PersonalIme {
    var menu=new ContextMenuStrip();menu.Items.Add("言渡设置",null,delegate{OpenSettings();});menu.Items.Add("截图／截图翻译",null,delegate{BeginInvoke((Action)CaptureTranslation);});menu.Items.Add("划词翻译",null,delegate{config.SelectionTranslation=!config.SelectionTranslation;config.Save();});menu.Opening+=delegate{((ToolStripMenuItem)menu.Items[2]).Checked=config.SelectionTranslation;};menu.Items.Add("清空翻译缓存",null,delegate{translator.Clear();});menu.Items.Add("退出言渡助手",null,delegate{Close();});
    tray.Icon=Brand.Icon;tray.Text="言渡输入法 · 右键打开言渡设置";tray.ContextMenuStrip=menu;tray.Visible=!testing;tray.DoubleClick+=delegate{OpenSettings();};
    Shown+=delegate{Hide();if(!config.Ready)OpenSettings();};
-   if(!testing){automaticUpdates=new AutomaticUpdates();Shown+=delegate{automaticUpdates.Start();};selectionMonitor=new SelectionMonitor(this,()=>config.SelectionTranslation&&!config.PauseTranslation&&!capturing,ShowSelectedTranslation);refreshCaptureMenu=delegate{menu.Items[1].Text="截图／截图翻译（"+(captureHotkey?registeredCaptureKey:String.IsNullOrEmpty(config.ScreenshotHotkey)?"未设置快捷键":"快捷键被占用")+"）";};ConfigureCaptureKey();}
+   if(!testing){automaticUpdates=new AutomaticUpdates();Shown+=delegate{automaticUpdates.Start();};selectionMonitor=new SelectionMonitor(this,()=>config.SelectionTranslation&&!config.PauseTranslation&&!capturing,ShowSelectedTranslation);selectionMonitor.Unavailable+=message=>tray.ShowBalloonTip(5000,"言渡划词翻译",message,ToolTipIcon.Info);refreshCaptureMenu=delegate{menu.Items[1].Text="截图／截图翻译（"+(captureHotkey?registeredCaptureKey:String.IsNullOrEmpty(config.ScreenshotHotkey)?"未设置快捷键":"快捷键被占用")+"）";};ConfigureCaptureKey();}
 
   }
   void ConfigureCaptureKey(){if(captureHotkey){Native.UnregisterHotKey(Handle,1101);captureHotkey=false;}registeredCaptureKey="";try{var key=CaptureShortcut.Parse(config.ScreenshotHotkey);if(key!=null){captureHotkey=Native.RegisterHotKey(Handle,1101,key.Modifiers,key.Key);if(captureHotkey)registeredCaptureKey=key.Text;else tray.ShowBalloonTip(6000,"言渡截图","截图快捷键已被占用，可在翻译设置中更换，或从言渡菜单截图。",ToolTipIcon.Info);}}catch{}if(refreshCaptureMenu!=null)refreshCaptureMenu();}
   bool CaptureKeyAvailable(string value){return captureHotkey&&value==registeredCaptureKey||CaptureShortcut.Probe(Handle,value);}
   void SaveComparison(bool value){config.CaptureComparison=value;try{config.Save();}catch{}}
   async void ShowSelectedTranslation(SelectedText selected){
-   if(cleaned||capturing||(selectionRead!=null&&!selectionRead.IsCompleted))return;capturing=true;ResetTranslation();if(selectionMonitor!=null)selectionMonitor.Hide();
+   if(cleaned||capturing)return;capturing=true;ResetTranslation();if(selectionMonitor!=null)selectionMonitor.Hide();
    try{
     await Task.Delay(100);if(cleaned||Native.GetForegroundWindow()!=selected.Foreground)return;
-    selectionRead=Task.Run(()=>SelectedText.Read(selected.Foreground,selected.Anchor));var active=selectionRead;
-    if(await Task.WhenAny(active,Task.Delay(1000))!=active||cleaned)return;
-    var current=active.Status==TaskStatus.RanToCompletion?active.Result:null;if(current==null||current.Text!=selected.Text||Native.GetForegroundWindow()!=selected.Foreground)return;
+    if(await PrivacyPolicy.ProtectedFocus()){MessageBox.Show("当前输入受隐私保护或无法确认安全状态，未开始划词翻译。","言渡隐私保护");return;}
+    if(cleaned||Native.GetForegroundWindow()!=selected.Foreground)return;
+    var current=selected;
     var bounds=SystemInformation.VirtualScreen;bool located=!current.Region.IsEmpty;var region=located?current.Region:Rectangle.Intersect(new Rectangle(current.Anchor.X,current.Anchor.Y,2,18),bounds);if(region.IsEmpty)return;
     var image=CaptureOverlay.CaptureDesktop(bounds);
     try{if(screenTranslation!=null&&!screenTranslation.IsDisposed)screenTranslation.Close();screenTranslation=new ScreenTranslation(config,translator,image,bounds,region,SaveComparison,null,current.Text,located);screenTranslation.Show();screenTranslation.Activate();}catch{image.Dispose();throw;}
@@ -238,7 +236,7 @@ namespace PersonalIme {
    if(!changed){if(panel.Visible&&translatedSource==value.Source)panel.Hint.Text=translationOrigin+" · "+(panel.Expanded?"右键收起 · 滚轮/箭头查看 · 点击替换":"点击替换原文 · 右键展开全文");return;}
    panel.Collapse();
    StopSpeech();failed=false;translated=translatedSource="";panel.Speaker.Visible=false;
-   panel.UndoAvailable=value.Target==undoWindow&&value.Source==undoTarget;panel.Original.Text=panel.UndoAvailable?undoSource:value.Source;
+   panel.UndoAvailable=value.Target==undoWindow&&value.Source==undoTarget;
    if(panel.UndoAvailable){CancelRequest();debounce.Stop();panel.Translation.Text=value.Source;panel.Speaker.Visible=true;panel.Hint.Text="已替换 · 再点译文撤回";panel.ShowPassive();return;}
    if(!Translator.HasChinese(value.Source)){CancelRequest();debounce.Stop();panel.Hide();return;}
    // A different source must never display the previous sentence's translation.
@@ -287,7 +285,7 @@ namespace PersonalIme {
    bool ok=await Task.Run(()=>WeChatEditor.Replace(state,expected,replacement));
    Note(ok?"uia_write_succeeded":"uia_write_rejected");
    if(cleaned||snapshot==null||!applying||pendingRevision!=revision||previewForeground!=state.Foreground)return;
-   if(ok){state.Text=replacement;wechatState=state;snapshot.Source=replacement;snapshot.Revision++;panel.Original.Text=replacement;}
+   if(ok){state.Text=replacement;wechatState=state;snapshot.Source=replacement;snapshot.Revision++;}
    Applied(ok);
   }
   void Applied(bool ok){
@@ -298,8 +296,8 @@ namespace PersonalIme {
    panel.Collapse();
    if(!pendingUndo){undoSource=pendingExpected;undoTarget=pendingReplacement;undoWindow=pendingTarget;}else{undoWindow=IntPtr.Zero;}
    panel.UndoAvailable=!pendingUndo;
-   if(pendingUndo){translated=pendingExpected;translatedSource=pendingReplacement;panel.Original.Text=pendingReplacement;panel.Translation.Text=translated;panel.Speaker.Visible=true;panel.Hint.Text="已还原中文 · 点击译文可再次替换";panel.ShowPassive();}
-   else{translated=translatedSource="";panel.Original.Text=pendingExpected;panel.Translation.Text=pendingReplacement;panel.Hint.Text="已替换 · 再点译文撤回";panel.ShowPassive();}
+   if(pendingUndo){translated=pendingExpected;translatedSource=pendingReplacement;panel.Translation.Text=translated;panel.Speaker.Visible=true;panel.Hint.Text="已还原中文 · 点击译文可再次替换";panel.ShowPassive();}
+   else{translated=translatedSource="";panel.Translation.Text=pendingReplacement;panel.Hint.Text="已替换 · 再点译文撤回";panel.ShowPassive();}
   }
   void Speak(){if(speaking){StopSpeech();return;}string text=!String.IsNullOrWhiteSpace(translated)?translated:(snapshot!=null&&snapshot.Source==undoTarget?undoTarget:"");if(String.IsNullOrWhiteSpace(text))return;try{
    speech.Rate=config.SpeechRate;speech.Volume=config.SpeechVolume;
@@ -310,7 +308,7 @@ namespace PersonalIme {
   void Expand(){if(String.IsNullOrEmpty(translated)&&!CanUndo())return;panel.ToggleExpanded();panel.Hint.Text=CanUndo()?(panel.Expanded?"右键收起 · 再点译文撤回":"再点译文撤回 · 右键展开全文"):(panel.Expanded?"右键收起 · 滚轮/箭头查看 · 点击替换":"点击替换原文 · 右键展开全文");}
   void CancelRequest(){var old=job;job=null;if(old!=null)old.Cancel.Cancel();}
   void ResetTranslation(){ResetTranslationReason("context_cleared");}
-  void ResetTranslationReason(string reason){wechatState=null;wechatRead=null;wechatClearPending=false;if(currentTarget!=IntPtr.Zero)Note(reason);debounce.Stop();CancelRequest();snapshot=null;currentTarget=previewForeground=IntPtr.Zero;translated=translatedSource=translationOrigin="";failed=composing=applying=false;undoWindow=IntPtr.Zero;undoSource=undoTarget="";panel.Original.Text=panel.Translation.Text=panel.Hint.Text="";panel.UndoAvailable=false;panel.Speaker.Visible=false;panel.Hide();StopSpeech();}
+  void ResetTranslationReason(string reason){wechatState=null;wechatRead=null;wechatClearPending=false;if(currentTarget!=IntPtr.Zero)Note(reason);debounce.Stop();CancelRequest();snapshot=null;currentTarget=previewForeground=IntPtr.Zero;translated=translatedSource=translationOrigin="";failed=composing=applying=false;undoWindow=IntPtr.Zero;undoSource=undoTarget="";panel.Translation.Text=panel.Hint.Text="";panel.UndoAvailable=false;panel.Speaker.Visible=false;panel.Hide();StopSpeech();}
   void Cleanup(){if(cleaned)return;cleaned=true;if(automaticUpdates!=null)automaticUpdates.Dispose();if(captureHotkey){Native.UnregisterHotKey(Handle,1101);captureHotkey=false;}if(selectionMonitor!=null)selectionMonitor.Dispose();if(screenTranslation!=null&&!screenTranslation.IsDisposed)screenTranslation.Close();watch.Dispose();debounce.Dispose();CancelRequest();tray.Visible=false;tray.Dispose();speech.SpeakAsyncCancelAll();speech.Dispose();panel.Dispose();translator.Dispose();}
   protected override void OnFormClosed(FormClosedEventArgs e){Cleanup();base.OnFormClosed(e);}
   protected override void Dispose(bool disposing){if(disposing)Cleanup();base.Dispose(disposing);}

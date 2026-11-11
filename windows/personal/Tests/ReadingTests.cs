@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Diagnostics;
 using System.Drawing;
 using System.IO;
@@ -12,7 +12,7 @@ using System.Windows.Automation;
 using PersonalIme;
 
 class ReadingTests {
- static int checks;
+ static SelectedText confirmed;static int checks;
  static void Check(bool value,string message){if(!value)throw new Exception(message);Console.WriteLine("PASS "+message);checks++;}
  static void Pump(int ms){var end=DateTime.UtcNow.AddMilliseconds(ms);while(DateTime.UtcNow<end){Application.DoEvents();Thread.Sleep(10);}}
  static T Field<T>(object owner,string name){return (T)owner.GetType().GetField(name,BindingFlags.NonPublic|BindingFlags.Instance).GetValue(owner);}
@@ -28,7 +28,7 @@ class ReadingTests {
  [STAThread]static int Main(string[] args){
   if(args.Length==1&&args[0]=="--ocr-worker-stdio")return LocalOcr.Worker();
   if(args.Length==1&&args[0]=="--selection-host"){Native.SetProcessDPIAware();Application.EnableVisualStyles();Application.Run(new Fixture());return 0;}
-  try{Native.SetProcessDPIAware();Application.EnableVisualStyles();if(args.Length==1&&args[0]=="--browser")Browser();else Run(args.Length==1&&args[0]=="--no-desktop");Console.WriteLine("OK "+checks+" reading-translation checks");return 0;}catch(Exception ex){Console.WriteLine("FAIL "+ex);return 1;}
+  try{Native.SetProcessDPIAware();Application.EnableVisualStyles();if(args.Length==1&&args[0]=="--browser")BrowserDispatcher();else if(args.Length==1&&args[0]=="--selection")SelectionDispatcher();else Run(args.Length==1&&args[0]=="--no-desktop");Console.WriteLine("OK "+checks+" reading-translation checks");return 0;}catch(Exception ex){Console.WriteLine("FAIL "+ex);return 1;}
  }
  static void Run(bool skipDesktop=false){
   Check(!ReadingPolicy.ValidText("   ")&&!ReadingPolicy.ValidText(new string('a',12001)),"empty and oversized text rejected");
@@ -37,7 +37,7 @@ class ReadingTests {
   Check(ReadingPolicy.TextBounds(new[]{new System.Windows.Rect(800,0,100,20)},new Rectangle(0,0,600,400)).IsEmpty,"offscreen selection does not create a false cover region");
   var r=ReadingPolicy.Selection(new Point(500,400),new Point(-300,-200),new Rectangle(-1920,-1080,3840,2160));Check(r==new Rectangle(-300,-200,800,600),"reverse drag and negative monitor coordinates");
   Check(!ReadingPolicy.ValidCapture(new Rectangle(0,0,0,50))&&!ReadingPolicy.ValidCapture(new Rectangle(0,0,6000,5000)),"empty and excessive captures rejected");
-  Capture();Hotkey();Ocr();Results();if(!skipDesktop)Selection();else Console.WriteLine("SKIP repeated selection-focus fixture; UIA path unchanged and independently verified");
+  Capture();Hotkey();Ocr();Results();if(!skipDesktop)Selection();else Console.WriteLine("SKIP separate desktop selection-focus fixture; browser selection checked separately");
  }
  static void Capture(){
   using(var bitmap=new Bitmap(640,360)){using(var g=Graphics.FromImage(bitmap))g.Clear(Color.White);
@@ -85,11 +85,11 @@ class ReadingTests {
  static void Selection(){
   using(var process=Process.Start(new ProcessStartInfo{FileName=Application.ExecutablePath,Arguments="--selection-host",UseShellExecute=false})){
    try{IntPtr host=IntPtr.Zero;Until(()=>{host=Native.FindWindow(null,"Yandu isolated selection fixture");return host!=IntPtr.Zero;},5000);SetForegroundWindow(host);SetCursorPos(500,165);mouse_event(2,0,0,0,UIntPtr.Zero);mouse_event(4,0,0,0,UIntPtr.Zero);Native.PostMessage(host,0x8000+700,IntPtr.Zero,IntPtr.Zero);Pump(250);Check(Native.GetForegroundWindow()==host,"selection fixture foreground verified");uint clipboard=GetClipboardSequenceNumber();
-    var read=Task.Run(()=>SelectedText.Read(host,new Point(500,250)));Until(()=>read.IsCompleted,4000);Check(read.Result!=null&&read.Result.Text=="你好，世界","UIA reads selection from separate application");Check(!read.Result.Region.IsEmpty&&new Rectangle(250,150,650,300).Contains(read.Result.Region),"UIA selection geometry stays inside the source editor");Check(GetClipboardSequenceNumber()==clipboard,"selection leaves clipboard unchanged");
-    using(var owner=new Form()){var handle=owner.Handle;int actions=0;using(var monitor=new SelectionMonitor(owner,()=>true,value=>actions++)){
+    var read=Task.Run(()=>SelectedText.Read(host,new Point(500,250)));Until(()=>read.IsCompleted,4000);Check(read.Result!=null&&read.Result.Text=="你好，世界","UIA reads selection from separate application");Check(!read.Result.Region.IsEmpty&&new Rectangle(250,150,650,300).Contains(read.Result.Region),"UIA selection geometry stays inside the source editor");Check(GetClipboardSequenceNumber()==clipboard,"selection leaves clipboard unchanged");var editor=AutomationElement.FocusedElement;var pattern=(TextPattern)editor.GetCurrentPattern(TextPattern.Pattern);var document=pattern.DocumentRange;var first=document.FindText("你好，世界",false,false);var second=document.FindText("其他内容",false,false);Rectangle combined;bool blocked;var pieces=SelectedText.ReadRanges(new[]{second,first,first.Clone()},out combined,out blocked);Check(!blocked&&pieces=="你好，世界\n其他内容","actual UIA fragments sorted and deduplicated without reading unselected gap");
+    using(var owner=new Form()){var handle=owner.Handle;int actions=0,reads=0;using(var monitor=new SelectionMonitor(owner,()=>true,value=>actions++,(w,p)=>{Interlocked.Increment(ref reads);return SelectedText.ReadChecked(w,p);})){
      Check(monitor.Available,"nonblocking mouse monitor registered");SetCursorPos(500,165);mouse_event(2,0,0,0,UIntPtr.Zero);mouse_event(4,0,0,0,UIntPtr.Zero);Native.PostMessage(host,0x8000+700,IntPtr.Zero,IntPtr.Zero);
      var badge=Field<TranslateBadge>(monitor,"badge");Until(()=>badge.Visible,4000);Check(actions==0,"selecting text does not send translation request");Check(Native.GetForegroundWindow()==host,"translation badge preserves source focus");
-     typeof(Control).GetMethod("OnClick",BindingFlags.Instance|BindingFlags.NonPublic).Invoke(badge.Controls[0],new object[]{EventArgs.Empty});Until(()=>actions==1,4000);Check(!badge.Visible,"explicit badge click dispatches once and hides badge");
+     int before=reads;Native.SetWindowPos(badge.Handle,new IntPtr(-1),badge.Left,badge.Top,badge.Width,badge.Height,0x0010|0x0040);var click=new Point(badge.Left+badge.Width/2,badge.Top+badge.Height/2);SetCursorPos(click.X,click.Y);mouse_event(2,0,0,0,UIntPtr.Zero);mouse_event(4,0,0,0,UIntPtr.Zero);Until(()=>actions==1,4000);Pump(400);Check(!badge.Visible,"explicit physical badge click dispatches once and hides badge");Check(reads==before+1,"badge mouse-up does not schedule a second background selection read");
      SetCursorPos(500,165);mouse_event(2,0,0,0,UIntPtr.Zero);mouse_event(4,0,0,0,UIntPtr.Zero);Native.PostMessage(host,0x8000+700,IntPtr.Zero,IntPtr.Zero);Until(()=>badge.Visible,4000);Native.PostMessage(host,0x8000+701,IntPtr.Zero,IntPtr.Zero);Pump(120);
      typeof(Control).GetMethod("OnClick",BindingFlags.Instance|BindingFlags.NonPublic).Invoke(badge.Controls[0],new object[]{EventArgs.Empty});Pump(500);Check(actions==1,"stale selection is rejected when password field gains focus");
     }}
@@ -97,9 +97,11 @@ class ReadingTests {
    }finally{if(!process.HasExited){process.CloseMainWindow();if(!process.WaitForExit(1500))process.Kill();}}
   }
  }
+ static void SelectionDispatcher(){Exception error=null;using(var host=new Form{ShowInTaskbar=false,Opacity=0,Size=new Size(1,1)}){host.Shown+=delegate{try{Selection();}catch(Exception ex){error=ex;}finally{host.Close();}};Application.Run(host);}if(error!=null)throw error;}
+ static void BrowserDispatcher(){Exception error=null;using(var host=new Form{ShowInTaskbar=false,Opacity=0,Size=new Size(1,1)}){host.Shown+=delegate{try{Browser();}catch(Exception ex){error=ex;}finally{host.Close();}};Application.Run(host);}if(error!=null)throw error;}
  static void Browser(){
   string root=Path.Combine(AppDomain.CurrentDomain.BaseDirectory,"reading-browser-"+Guid.NewGuid().ToString("N"));Directory.CreateDirectory(root);string title="Yandu isolated reading "+Guid.NewGuid().ToString("N"),page=Path.Combine(root,"fixture.html");
-  File.WriteAllText(page,"<!doctype html><meta charset='utf-8'><title>"+title+"</title><body style='font:30px sans-serif;padding:50px'><p>你好，世界。Yandu browser selection.</p><input type='password' value='fixture-only' style='margin-top:40px'></body>",System.Text.Encoding.UTF8);
+  File.WriteAllText(page,"<!doctype html><meta charset='utf-8'><title>"+title+"</title><body style='font:22px sans-serif;padding:30px'><p>你好，世界。Yandu browser selection.</p><p>UIA 片段甲，保持标点。</p><p>其它未选中的文字。</p><p>UIA 片段乙：引号“你好”、English!</p><ul><li>点击<strong>“复制截图”</strong>后退出截图界面，图片仍可粘贴。</li><li>其它未选中的文字。</li><li><span><strong><em>拖动选区内部可以移动；拖动边缘、角点可以调整大小。</em></strong></span></li><li>松开后自动更新剪贴板图片，不触发翻译。</li></ul><input type='password' value='fixture-only' style='margin-top:40px'></body>",System.Text.Encoding.UTF8);
   IntPtr browser=IntPtr.Zero;using(var process=Process.Start(new ProcessStartInfo{FileName=@"C:\Program Files\Google\Chrome\Application\chrome.exe",Arguments="--user-data-dir=\""+Path.Combine(root,"profile")+"\" --no-first-run --no-default-browser-check --disable-background-networking --force-renderer-accessibility --new-window --window-position=180,120 --window-size=900,650 \""+new Uri(page).AbsoluteUri+"\"",UseShellExecute=false})){
    try{Until(()=>{EnumWindows(delegate(IntPtr window,IntPtr data){var text=new System.Text.StringBuilder(512);GetWindowText(window,text,512);if(text.ToString().Contains(title)&&Native.IsWindowVisible(window))browser=window;return true;},IntPtr.Zero);return browser!=IntPtr.Zero;},15000);
     SetForegroundWindow(browser);Pump(500);AutomationElement doc=null;Until(()=>{doc=AutomationElement.FromHandle(browser).FindFirst(TreeScope.Descendants,new PropertyCondition(AutomationElement.ControlTypeProperty,ControlType.Document));return doc!=null;},10000);
@@ -108,6 +110,16 @@ class ReadingTests {
     var selected=Task.Run(()=>SelectedText.Read(browser,point));Until(()=>selected.IsCompleted,5000);Check(selected.Result!=null&&selected.Result.Text.Contains("你好，世界")&&selected.Result.Text.Contains("Yandu"),"browser document selection available through UIA");
     Check(!selected.Result.Region.IsEmpty&&SystemInformation.VirtualScreen.Contains(selected.Result.Region),"browser selection provides valid screen geometry for anchored translation");
     Check(!selected.Result.Text.Contains("fixture-only"),"browser selection excludes password value");
+    Check(selected.Result.Text.Contains("“复制截图”")&&selected.Result.Text.Contains("边缘、角点")&&selected.Result.Text.Contains("\n"),"formatted multi-line list preserves quotes punctuation and breaks");
+    var pattern=(TextPattern)doc.GetCurrentPattern(TextPattern.Pattern);var document=pattern.DocumentRange;
+    var first=document.FindText("UIA 片段甲，保持标点。",false,false);var second=document.FindText("UIA 片段乙：引号“你好”、English!",false,false);Check(first!=null&&second!=null,"actual browser exposes formatted text ranges");
+    using(var owner=new Form())using(var monitor=new SelectionMonitor(owner,()=>true,value=>confirmed=value)){
+     var handle=owner.Handle;confirmed=null;typeof(SelectionMonitor).GetField("selection",BindingFlags.Instance|BindingFlags.NonPublic).SetValue(monitor,selected.Result);
+     var end=first.Clone();end.MoveEndpointByRange(System.Windows.Automation.Text.TextPatternRangeEndpoint.Start,end,System.Windows.Automation.Text.TextPatternRangeEndpoint.End);end.Select();Pump(80);
+     var badge=Field<TranslateBadge>(monitor,"badge");badge.At(point);typeof(Control).GetMethod("OnClick",BindingFlags.Instance|BindingFlags.NonPublic).Invoke(badge.Controls[0],new object[]{EventArgs.Empty});Until(()=>confirmed!=null,4000);Check(confirmed.Text==selected.Result.Text&&confirmed.Region.IsEmpty,"badge click still confirms safe multi-line text when browser selection collapsed");
+    }
+    var password=doc.FindFirst(TreeScope.Descendants,new PropertyCondition(AutomationElement.IsPasswordProperty,true));Check(password!=null,"password fixture accessible as protected metadata");password.SetFocus();Pump(100);var protectedRead=Task.Run(()=>SelectedText.ReadChecked(browser,point));Until(()=>protectedRead.IsCompleted,3000);Check(protectedRead.Result.State==SelectionReadState.Blocked&&protectedRead.Result.Value==null,"password focus cannot fall back to an earlier selection");
+
    }finally{if(browser!=IntPtr.Zero)Native.PostMessage(browser,0x10,IntPtr.Zero,IntPtr.Zero);}
   }
  }

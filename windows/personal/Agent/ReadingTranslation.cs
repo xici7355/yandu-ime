@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Diagnostics;
+using System.Collections.Generic;
 using System.Drawing;
 using System.Drawing.Imaging;
 using System.IO;
@@ -25,27 +26,31 @@ namespace PersonalIme {
  }
 
  // UIA reads only the explicit selection. No Ctrl+C simulation or clipboard polling.
+ internal enum SelectionReadState {Empty,Ready,Blocked,Unavailable}
+ internal sealed class SelectionRead {public SelectionReadState State;public SelectedText Value;}
  internal sealed class SelectedText {
   public string Text;public IntPtr Foreground;public Point Anchor;public Rectangle Region;
-  public static SelectedText Read(IntPtr window,Point point){
-   try {
-    if(window==IntPtr.Zero||Native.GetForegroundWindow()!=window)return null;
-    uint pid;Native.GetWindowThreadProcessId(window,out pid);if(pid==(uint)Process.GetCurrentProcess().Id)return null;
-    var element=AutomationElement.FocusedElement;if(PrivacyPolicy.ProtectedElement(element))return null;
-    Rectangle region;var selected=ReadElement(element,pid,out region);
-    if(selected==null){element=AutomationElement.FromPoint(new System.Windows.Point(point.X,point.Y));for(int i=0;i<6&&element!=null&&selected==null;i++){selected=ReadElement(element,pid,out region);if(selected==null)element=TreeWalker.ControlViewWalker.GetParent(element);}}
-    if(selected==null||Native.GetForegroundWindow()!=window)return null;
-    return new SelectedText{Text=selected,Foreground=window,Anchor=point,Region=region};
-   }catch{return null;}
-  }
-  static string ReadElement(AutomationElement element,uint pid,out Rectangle region){
-   region=Rectangle.Empty;
-   if(element==null||element.Current.ProcessId!=pid||PrivacyPolicy.ProtectedElement(element))return null;
-   object pattern;if(!element.TryGetCurrentPattern(TextPattern.Pattern,out pattern))return null;
-   var ranges=((TextPattern)pattern).GetSelection();if(ranges.Length!=1)return null;
-   var value=ranges[0].GetText(ReadingPolicy.MaxCharacters+1);
-   if(ReadingPolicy.ValidText(value))try{region=ReadingPolicy.TextBounds(ranges[0].GetBoundingRectangles(),SystemInformation.VirtualScreen);}catch{}
-   return ReadingPolicy.ValidText(value)&&!PrivacyPolicy.IsSensitive(value)?value:null;
+  public static SelectedText Read(IntPtr window,Point point){return ReadChecked(window,point).Value;}
+  public static SelectionRead ReadChecked(IntPtr window,Point point){try{
+   if(window==IntPtr.Zero||Native.GetForegroundWindow()!=window)return new SelectionRead{State=SelectionReadState.Unavailable};
+   uint pid;Native.GetWindowThreadProcessId(window,out pid);if(pid==(uint)Process.GetCurrentProcess().Id)return new SelectionRead{State=SelectionReadState.Unavailable};
+   var focused=AutomationElement.FocusedElement;if(PrivacyPolicy.ProtectedElement(focused))return new SelectionRead{State=SelectionReadState.Blocked};
+   foreach(var start in new[]{AutomationElement.FromPoint(new System.Windows.Point(point.X,point.Y)),focused}){
+    var element=start;
+    for(int i=0;i<24&&element!=null;i++){
+     if(element.Current.ProcessId!=pid)break;Rectangle region;bool blocked;string text=ReadElement(element,out region,out blocked);
+     if(blocked)return new SelectionRead{State=SelectionReadState.Blocked};
+     if(text!=null){if(Native.GetForegroundWindow()!=window)return new SelectionRead{State=SelectionReadState.Unavailable};return new SelectionRead{State=SelectionReadState.Ready,Value=new SelectedText{Text=text,Foreground=window,Anchor=point,Region=region}};}
+     element=TreeWalker.RawViewWalker.GetParent(element);
+    }
+   }return new SelectionRead{State=SelectionReadState.Empty};
+  }catch{return new SelectionRead{State=SelectionReadState.Unavailable};}}
+  static string ReadElement(AutomationElement element,out Rectangle region,out bool blocked){region=Rectangle.Empty;blocked=PrivacyPolicy.ProtectedElement(element);if(blocked)return null;object pattern;if(!element.TryGetCurrentPattern(TextPattern.Pattern,out pattern))return null;return ReadRanges(((TextPattern)pattern).GetSelection(),out region,out blocked);}
+  internal static string ReadRanges(System.Windows.Automation.Text.TextPatternRange[] ranges,out Rectangle region,out bool blocked){region=Rectangle.Empty;blocked=false;if(ranges==null||ranges.Length==0)return null;if(ranges.Length>64){blocked=true;return null;}
+   var ordered=new List<System.Windows.Automation.Text.TextPatternRange>(ranges);ordered.Sort((a,b)=>a.CompareEndpoints(System.Windows.Automation.Text.TextPatternRangeEndpoint.Start,b,System.Windows.Automation.Text.TextPatternRangeEndpoint.Start));
+   var groups=new List<System.Windows.Automation.Text.TextPatternRange>();foreach(var range in ordered){if(groups.Count==0){groups.Add(range);continue;}var last=groups[groups.Count-1];int end=last.CompareEndpoints(System.Windows.Automation.Text.TextPatternRangeEndpoint.End,range,System.Windows.Automation.Text.TextPatternRangeEndpoint.End);int start=last.CompareEndpoints(System.Windows.Automation.Text.TextPatternRangeEndpoint.Start,range,System.Windows.Automation.Text.TextPatternRangeEndpoint.Start);if(end>=0)continue;if(start==0){groups[groups.Count-1]=range;continue;}if(last.CompareEndpoints(System.Windows.Automation.Text.TextPatternRangeEndpoint.End,range,System.Windows.Automation.Text.TextPatternRangeEndpoint.Start)>0)throw new InvalidOperationException("Overlapping selection ranges cannot be safely combined.");groups.Add(range);}
+   var text=new System.Text.StringBuilder();System.Windows.Automation.Text.TextPatternRange previous=null;foreach(var range in groups){string value=range.GetText(ReadingPolicy.MaxCharacters+1);if(String.IsNullOrEmpty(value))continue;bool gap=previous!=null&&previous.CompareEndpoints(System.Windows.Automation.Text.TextPatternRangeEndpoint.End,range,System.Windows.Automation.Text.TextPatternRangeEndpoint.Start)<0;if(text.Length+value.Length+(gap?1:0)>ReadingPolicy.MaxCharacters){blocked=true;return null;}if(gap)text.Append('\n');text.Append(value);previous=range;try{var part=ReadingPolicy.TextBounds(range.GetBoundingRectangles(),SystemInformation.VirtualScreen);if(!part.IsEmpty)region=region.IsEmpty?part:Rectangle.Union(region,part);}catch{}}
+   string result=text.ToString();if(!ReadingPolicy.ValidText(result))return null;if(PrivacyPolicy.IsSensitive(result)){blocked=true;return null;}return result;
   }
  }
 

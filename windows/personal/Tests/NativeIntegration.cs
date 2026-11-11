@@ -71,7 +71,7 @@ class NativeIntegration {
    Check(editor.Text=="前缀 你好后缀","Chinese inserted between surrounding text");
    snapshot=(Snapshot)Field(agent,"snapshot");Check(snapshot!=null&&snapshot.Source=="你好","only newly committed source tracked");
    var panel=(PanelForm)Field(agent,"panel");
-   SendMessage(panel.Handle,0x202,IntPtr.Zero,new IntPtr((55<<16)|25));Pump(250);
+   SendMessage(panel.Handle,0x202,IntPtr.Zero,new IntPtr(((panel.Translation.Top+panel.Translation.Height/2)<<16)|25));Pump(250);
    Check(editor.Text=="前缀 Hello.后缀","mouse click replaces source and preserves surroundings");
    Check(Native.GetForegroundWindow()==host.Handle,"translation mouse click keeps input focus");
    SendMessage(panel.Handle,0x202,IntPtr.Zero,new IntPtr(((panel.Translation.Top+panel.Translation.Height/2)<<16)|(panel.Translation.Left+25)));Pump(600);
