@@ -27,13 +27,13 @@ $script:progress=New-Object 'Collections.Generic.List[int]'
 function Write-YanduProgress([int]$Percent,[string]$Message){$script:progress.Add($Percent)}
 Copy-YanduPayload $source $target
 Check ((Get-FileHash -LiteralPath "$source/data/词库.txt").Hash -eq (Get-FileHash -LiteralPath "$target/data/词库.txt").Hash) 'custom path copies exact dictionary bytes'
-Check (Test-Path -LiteralPath "$target/weasel.2.1.0.dll") 'versioned native DLL copied'
+Check (Test-Path -LiteralPath "$target/weasel.2.1.1.dll") 'versioned native DLL copied'
 Check (!(Test-Path -LiteralPath "$target/weasel.dll")) 'unversioned native DLL not installed'
 Check ($progress.Count -gt 1 -and $progress[$progress.Count-1] -eq 75) 'copy reports actual completed-byte progress ending at 75'
 $sorted=@($progress | Sort-Object);Check (($sorted -join ',') -eq ($progress -join ',')) 'copy progress monotonic'
 Check (($progress | Measure-Object -Maximum).Maximum -lt 100) 'copy cannot claim complete installation'
 Copy-YanduPayload $source $target
-Check ((Get-FileHash -LiteralPath "$source/weasel.dll").Hash -eq (Get-FileHash -LiteralPath "$target/weasel.2.1.0.dll").Hash) 'unchanged upgrade payload safely reused'
+Check ((Get-FileHash -LiteralPath "$source/weasel.dll").Hash -eq (Get-FileHash -LiteralPath "$target/weasel.2.1.1.dll").Hash) 'unchanged upgrade payload safely reused'
 [IO.File]::WriteAllText("$source/PersonalTranslateIme.exe",'new fixture')
 $lock=[IO.File]::Open("$target/PersonalTranslateIme.exe",[IO.FileMode]::Open,[IO.FileAccess]::Read,[IO.FileShare]::None)
 $failed=$false

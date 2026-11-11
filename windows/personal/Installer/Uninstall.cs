@@ -7,8 +7,8 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 [assembly:AssemblyTitle("言渡输入法 Windows 卸载程序")]
-[assembly:AssemblyVersion("2.1.0.0")]
-[assembly:AssemblyFileVersion("2.1.0.0")]
+[assembly:AssemblyVersion("2.1.1.0")]
+[assembly:AssemblyFileVersion("2.1.1.0")]
 class Uninstall : Form {
  readonly CheckBox purge=new CheckBox();readonly Label status=new Label();readonly Button remove=new PersonalIme.SoftButton(),cancel=new PersonalIme.SoftButton();bool busy,done;
  internal Uninstall(){Text="卸载言渡输入法";Icon=PersonalIme.Brand.Icon;Font=new Font("Microsoft YaHei UI",10);ClientSize=new Size(560,390);BackColor=PersonalIme.Palette.Background;ForeColor=PersonalIme.Palette.Text;FormBorderStyle=FormBorderStyle.FixedSingle;MaximizeBox=false;StartPosition=FormStartPosition.CenterScreen;AutoScaleMode=AutoScaleMode.Dpi;
