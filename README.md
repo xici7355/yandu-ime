@@ -8,15 +8,19 @@
 
 **历史正式版下载：[V1.0（安卓／Windows／源码）](https://github.com/xici7355/yandu-ime/releases/tag/v1.0.0)** · [V1.0 Windows 安装包](https://github.com/xici7355/yandu-ime/releases/download/v1.0.0/Yandu-Setup-x64.exe) · [全部正式版本](https://github.com/xici7355/yandu-ime/releases)
 
-当前正式版本：**Windows V2.0（2.0.0）**，**Android V1.0（1.0.0）**。Windows V2.0 基于已验证的 1.2.1 交付定版；此次不更新或重标安卓版。
+当前正式版本：**Windows V2.1.0（2.1.0）**，**Android V1.0（1.0.0）**。本次仅更新 Windows，之前本地交付的 2.1.1／2.1.2 改动统一纳入正式版 2.1.0。
 
-## Windows V2.1 本地维护版
+## Windows V2.1.0 升级内容
 
-本地 2.1.2 保留可迁移的安装目录、品牌卸载界面及可选彻底清理；安装列表名称为“言渡输入法”，发布者为“yandu.github.com”。右下角支持新版提示、升级或忽略；后台每天检查公开版本信息。
+- 修复卸载遇到占用文件后中断、控制面板留下无图标条目的问题。输入模块仍被应用加载时，自动登记重启清理，卸载登记与启动入口正常移除；卸载失败时保留具体原因。
+- 卸载默认保留配置和学习词库；勾选“彻底卸载”后清理当前账号的 API 配置、学习词库与缓存。手动保存的安装包和源码备份不删除。
+- 安装目录可以选择或迁移，安装进度来自实际步骤；控制面板名称统一为“言渡输入法”，发布者显示“yandu.github.com”。
+- 普通截图与截图翻译共用一套可自定义、检测冲突的快捷键。框选后自动复制，选区支持拖动和调整大小；点“复制截图”退出，点“翻译”才识别文字。
+- 修复带标点、多行列表的划词读取，以及点击“译”后选区收起导致结果不显示的问题。
+- 输入翻译卡片移除重复的原文行，保留译文、朗读和替换撤回。
+- 右下角支持新版提示，可升级、忽略或取消；升级下载核对 SHA-256，保留配置与词库，安装仍需 Windows 管理员确认。
 
-普通截图与截图翻译共用一套可自定义且检测冲突的快捷键。框选后先自动复制图片，可拖动选区移动或调整大小；点击“复制截图”后退出，点击同一工具栏“翻译”才识别和调用翻译流程。
-
-该包尚未替换下方 V2.0 正式发布。划词及精简卡片修复见 [V2.1.2](docs/WINDOWS-V2.1.2.md)；截图修复见 [V2.1.1](docs/WINDOWS-V2.1.1.md)；清理范围、自动检查及剪贴板边界见 [V2.1 说明](docs/WINDOWS-V2.1.md)。
+[下载 Windows 2.1.0 安装包](https://github.com/xici7355/yandu-ime/releases/download/v2.1.0/Yandu-Setup-x64.exe) · [版本说明](docs/WINDOWS-V2.1.md) · [安装使用](docs/INSTALL-WINDOWS.md)
 
 ## Windows V2.0 升级内容
 
@@ -76,11 +80,11 @@
 
 | 平台 | 安装包 | 环境 |
 | --- | --- | --- |
-| Windows V2.0 | [Yandu-Setup-x64.exe](https://github.com/xici7355/yandu-ime/releases/download/v2.0.0/Yandu-Setup-x64.exe) | Windows 10/11 x64，本机验收为 Windows 11 |
+| Windows V2.1.0 | [Yandu-Setup-x64.exe](https://github.com/xici7355/yandu-ime/releases/download/v2.1.0/Yandu-Setup-x64.exe) | Windows 10/11 x64，本机验收为 Windows 11 |
 | Android V1.0 ARM64 | [Yandu-Android-arm64.apk](https://github.com/xici7355/yandu-ime/releases/download/v1.0.0/Yandu-Android-arm64.apk) | Android 6.0+，常见 ARM64 手机 |
 | Android V1.0 x86_64 | [Yandu-Android-x86_64.apk](https://github.com/xici7355/yandu-ime/releases/download/v1.0.0/Yandu-Android-x86_64.apk) | Android 6.0+，x86_64 设备或模拟器 |
 
-[Windows V2.0 发布页与 SHA-256](https://github.com/xici7355/yandu-ime/releases/tag/v2.0.0) · [Android V1.0 发布页](https://github.com/xici7355/yandu-ime/releases/tag/v1.0.0) · [Windows 使用说明](docs/INSTALL-WINDOWS.md) · [Android 使用说明](docs/INSTALL-ANDROID.md) · [版本介绍](CHANGELOG.md)
+[Windows V2.1.0 发布页与 SHA-256](https://github.com/xici7355/yandu-ime/releases/tag/v2.1.0) · [Android V1.0 发布页](https://github.com/xici7355/yandu-ime/releases/tag/v1.0.0) · [Windows 使用说明](docs/INSTALL-WINDOWS.md) · [Android 使用说明](docs/INSTALL-ANDROID.md) · [版本介绍](CHANGELOG.md)
 
 两端统一使用“言渡输入法”名称和图标，设置按键盘、输入、翻译、隐私四类组织，采用跟随系统深浅色的中性色与荧光绿点缀。
 

@@ -36,7 +36,7 @@ if(!$Uninstall){
  }
  Write-YanduProgress 80 '正在注册 64 位输入法'
  $env:TEXTSERVICE_PROFILE='hans'
- foreach($item in @(@('System32','weaselx64.2.1.2.dll'),@('SysWOW64','weasel.2.1.2.dll'))){
+ foreach($item in @(@('System32','weaselx64.2.1.0.dll'),@('SysWOW64','weasel.2.1.0.dll'))){
   $p=Start-Process "$env:WINDIR/$($item[0])/regsvr32.exe" -ArgumentList '/s',('"'+(Join-Path $destination $item[1])+'"') -Wait -PassThru -WindowStyle Hidden
   if($p.ExitCode){throw "输入法注册失败：$($item[1])，错误 $($p.ExitCode)"}
   if($item[0] -eq 'System32'){Write-YanduProgress 86 '正在注册 32 位输入法'}
@@ -72,8 +72,8 @@ if(!$Uninstall){
  New-ItemProperty -Path $uninstallKey -Name Publisher -Value 'yandu.github.com' -PropertyType String -Force | Out-Null
  New-ItemProperty -Path $uninstallKey -Name URLInfoAbout -Value 'https://github.com/xici7355/yandu-ime' -PropertyType String -Force | Out-Null
  New-ItemProperty -Path $uninstallKey -Name InstallDate -Value (Get-Date -Format 'yyyyMMdd') -PropertyType String -Force | Out-Null
- New-ItemProperty -Path $uninstallKey -Name DisplayIcon -Value ($destination+'\PersonalTranslateIme.exe,0') -PropertyType String -Force | Out-Null
- New-ItemProperty -Path $uninstallKey -Name DisplayVersion -Value '2.1.2' -PropertyType String -Force | Out-Null
+ New-ItemProperty -Path $uninstallKey -Name DisplayIcon -Value ($destination+'\Uninstall.exe,0') -PropertyType String -Force | Out-Null
+ New-ItemProperty -Path $uninstallKey -Name DisplayVersion -Value '2.1.0' -PropertyType String -Force | Out-Null
  New-ItemProperty -Path $uninstallKey -Name InstallLocation -Value $destination -PropertyType String -Force | Out-Null
  New-ItemProperty -Path $uninstallKey -Name UninstallString -Value ('"'+$destination+'\Uninstall.exe"') -PropertyType String -Force | Out-Null
  New-ItemProperty -Path $uninstallKey -Name NoModify -Value 1 -PropertyType DWord -Force | Out-Null
@@ -83,7 +83,7 @@ if(!$Uninstall){
  # Launch from the user's Start menu, so the assistant runs without elevation.
  Write-Output '安装完成。请从开始菜单“言渡输入法”打开“启动输入法”，再按 Win＋空格选择它。首次准备词库需要稍等片刻。'
 }else{
- if(Test-Path "$destination/WeaselServer.exe"){& "$destination/WeaselServer.exe" /q}
+ # A partial uninstall may already have removed runtime DLLs. Do not launch the old server here.
  foreach($process in @(Get-Process WeaselServer,PersonalTranslateIme -ErrorAction SilentlyContinue | Where-Object {$_.Path -in @("$destination\PersonalTranslateIme.exe","$destination\WeaselServer.exe")})){
   if($process.ProcessName -eq 'PersonalTranslateIme'){$process.Kill()}
   if(!$process.WaitForExit(5000)){$process.Kill();if(!$process.WaitForExit(3000)){throw '言渡服务尚未退出，未继续清理个人数据。'}}

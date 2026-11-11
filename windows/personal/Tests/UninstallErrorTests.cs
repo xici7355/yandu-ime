@@ -1,0 +1,2 @@
+﻿using System;using System.Text;
+class UninstallErrorTests{static int Main(){string reason="测试：拒绝访问目录。";string result=Uninstall.FailureMessage("ignored\r\nYANDU_ERROR|"+Convert.ToBase64String(Encoding.UTF8.GetBytes(reason))+"\r\n");if(result!="卸载未完成："+reason)throw new Exception("Framed error lost");if(Uninstall.FailureMessage("YANDU_ERROR|invalid!").Contains("被占用"))throw new Exception("False lock diagnosis");Console.WriteLine("PASS actual failure is preserved, malformed diagnostics never claim a lock");return 0;}}
