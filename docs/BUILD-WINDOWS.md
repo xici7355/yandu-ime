@@ -58,3 +58,9 @@ V1.1.1 原位截图结果可通过 `personal/build-agent.ps1 -ScreenTest` 检查
 `personal/prepare-dictionary.ps1` 离线核验 Dictionary 清单中的 SHA-256 并复制到 bin。运行 `personal/build-agent.ps1 -DictionaryTest` 检查真实词库、API 回退和强制隐私保护；`-UiTest` 包含无 API 的输入预览。
 
 更新公开快照时从 CC-CEDICT 官方来源取回原始 gzip，使用 `personal/Tools/build-lexicon.py --help` 查看生成参数。只允许公开源数据，不导入个人用户词库或翻译缓存。生成后提交适配数据、manifest、NOTICE 与完整许可，重跑测试后随应用发版；不添加后台收集或定时上传。
+
+## V2.1 安装维护与共享截图
+
+`personal/build-agent.ps1 -LifecycleTest` 在真实界面消息循环中检查唯一截图快捷键、冲突检测、通知交互，以及固定图片复制后显式翻译；不执行系统安装或卸载。`personal/Tests/LifecycleTests.ps1` 在项目内隔离目录验证复制／迁移目标和清理边界，并可用 Windows PowerShell 5.1 运行。安装器／卸载器界面检查见 `InstallerLifecycleUiTests.cs`，只打开和取消本测试进程的目录框，不运行卸载 worker。
+
+安装脚本随包包含 Maintenance.ps1。它只针对注册的专用安装路径及言渡已知文件生成清理计划，拒绝越界或联接。不要用全盘搜索删除名称包含“言渡”的文件，也不要清理用户手动保存的安装包和源码。

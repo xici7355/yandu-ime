@@ -13,9 +13,9 @@ class InstallerFlowUiTest {
  static void Call(object form,string name){typeof(Setup).GetMethod(name,BindingFlags.NonPublic|BindingFlags.Instance).Invoke(form,null);Application.DoEvents();}
  static Form Create(){return (Form)Activator.CreateInstance(typeof(Setup),BindingFlags.Instance|BindingFlags.NonPublic,null,new object[0],null);}
  [STAThread]static void Main(){Application.EnableVisualStyles();Application.SetCompatibleTextRenderingDefault(false);
-  string existing=Setup.FindInstalled();Check(existing==@"C:\Program Files\PersonalTranslateIme","installed path discovery");
-  using(var form=Create()){form.Show();Application.DoEvents();Check(((TextBox)Get(form,"location")).Text==existing,"upgrade defaults to original path");Check(((TextBox)Get(form,"location")).ReadOnly,"upgrade path read-only");Check(!((Button)Get(form,"browse")).Enabled,"upgrade cannot browse to another path");form.Close();}
-  var installed=typeof(Setup).GetField("installed",BindingFlags.Static|BindingFlags.NonPublic);installed.SetValue(null,null);
+  string existing=@"C:\Program Files\PersonalTranslateIme";var installed=typeof(Setup).GetField("installed",BindingFlags.Static|BindingFlags.NonPublic);installed.SetValue(null,existing);Check(!Setup.ValidInstallation(@"D:\MissingYanduFixture"),"stale registry location is not an installed product");
+  using(var form=Create()){form.Show();Application.DoEvents();Check(((TextBox)Get(form,"location")).Text==existing,"upgrade defaults to original path");Check(!((TextBox)Get(form,"location")).ReadOnly,"existing installation path remains editable");Check(((Button)Get(form,"browse")).Enabled,"existing installation can select a new empty path");Check(((Button)Get(form,"action")).Text=="安装言渡","installer uses installation action instead of upgrade-only option");form.Close();}
+  installed.SetValue(null,null);
   using(var form=Create()){form.Show();Application.DoEvents();Check(!((TextBox)Get(form,"location")).ReadOnly,"new install path editable");Check(((Button)Get(form,"browse")).Enabled,"new install folder picker enabled");Check(((ProgressBar)Get(form,"progress")).Style==ProgressBarStyle.Continuous,"determinate progress instead of marquee");
    string report=Path.Combine(Path.GetTempPath(),"YanduUiFixture-"+Guid.NewGuid().ToString("N")+".txt");Field("progressFile").SetValue(form,report);
    try{File.WriteAllText(report,"YANDU_PROGRESS|20|copying\nYANDU_PROGRESS|75|copied\n");Call(form,"ReadProgress");Check(((ProgressBar)Get(form,"progress")).Value==75,"actual worker progress reflected");

@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Drawing;
 using System.Diagnostics;
 using System.IO;
@@ -8,7 +8,8 @@ using System.Windows.Forms;
 namespace PersonalIme {
  internal sealed class SettingsForm : Form {
   readonly Settings config;
-  readonly TextBox endpoint=new TextBox(),model=new TextBox(),key=new TextBox();
+  readonly TextBox endpoint=new TextBox(),model=new TextBox(),key=new TextBox(),captureKey=new TextBox();
+  public Func<string,bool> CaptureShortcutAvailable;
   readonly ComboBox voice=new ComboBox();
   readonly TrackBar rate=new TrackBar(),volume=new TrackBar();
   readonly CheckBox pause=new CheckBox();
@@ -43,7 +44,7 @@ namespace PersonalIme {
    AddText(keyboard,"右键任务栏的言渡图标，选择“言渡设置”。\r\n点击译文替换，再点同一位置撤回。\r\n也可从开始菜单或托盘打开言渡设置\r\n也可以直接点击译文或小喇叭。",22,190,520,150,false);
    var input=Page(tabs,"输入");
    AddText(input,"输入与替换",22,20,550,28,true);
-   AddText(input,"只跟踪本次由该输入法输入的文字。\r\n替换前核对原文、输入框和光标位置。\r\n移动到其他位置或切换输入框后，旧译文失效。\r\n中文原文标点保持不变；译文末尾逗号、句号本地转换。\r\n中文候选词不显示英文释义。\r\n用户词库学习在本机完成，重启后保留。",22,65,550,170,false);
+   AddText(input,"在当前行末确认完整原文。\r\n替换前核对原文、输入框和光标位置。\r\n移动到其他位置或切换输入框后，旧译文失效。\r\n中文原文标点保持不变；译文末尾逗号、句号本地转换。\r\n中文候选词不显示英文释义。\r\n用户词库学习在本机完成，重启后保留。",22,65,550,170,false);
    var translate=Page(tabs,"翻译");
    LabelField(translate,"API 接口地址",endpoint,20); endpoint.Text=config.Endpoint;
    LabelField(translate,"模型名称",model,95); model.Text=config.Model;
@@ -65,18 +66,21 @@ namespace PersonalIme {
    status.SetBounds(22,415,550,44);translate.Controls.Add(status);
    AddText(translate,"阅读翻译",22,480,550,28,true);
    selectionTranslation.Text="划词后显示“译”按钮，点击才发送翻译";selectionTranslation.Checked=config.SelectionTranslation;selectionTranslation.SetBounds(22,520,650,32);translate.Controls.Add(selectionTranslation);
-   AddText(translate,"截图与划词自动中英互译；密码框不读取。\r\n截屏在本机识别，默认原位覆盖译文，对照开关可保留原图。\r\n只将待译文字发送到配置的接口；截图可复制，不提供朗读。",22,562,680,86,false);
-   Button(translate,"截屏翻译",22,660,150).Click+=delegate{if(ScreenTranslationRequested!=null){Close();ScreenTranslationRequested();}};
-   AddText(translate,"截图快捷键：Ctrl＋Alt＋Z。也可右键任务栏言渡图标，选择“截屏翻译”。",22,710,680,45,false);
-   AddText(translate,"本地词典优先",22,780,550,28,true);
-   AddText(translate,LocalDictionary.Description()+"\r\n完整命中单词或短语时本地返回，未命中再请求 AI。\r\n多义词可点“AI精译”；词库随版本更新，不采集个人词汇。",22,822,680,100,false);
+   AddText(translate,"截图与划词自动中英互译；密码框不读取。\r\n截图后先复制图片；点击工具栏翻译才在本机识别。\r\n只将待译文字发送到配置的接口；截图可复制，不提供朗读。",22,562,680,86,false);
+   Button(translate,"截图／截图翻译",22,660,150).Click+=delegate{if(ScreenTranslationRequested!=null){Close();ScreenTranslationRequested();}};
+   AddText(translate,"截图／截图翻译共用快捷键（可修改，留空关闭快捷键）",22,712,680,28,false);
+   captureKey.SetBounds(22,748,330,30);captureKey.Text=config.ScreenshotHotkey;translate.Controls.Add(captureKey);
+   Button(translate,"检查冲突",365,744,130).Click+=delegate{try{string value=CaptureShortcut.Normalize(captureKey.Text);bool available=CaptureShortcutAvailable!=null?CaptureShortcutAvailable(value):CaptureShortcut.Probe(Handle,value);MessageBox.Show(this,available?"快捷键可用，保存设置后生效。":"该快捷键已被占用，请更换后再保存。","截图快捷键");}catch(Exception ex){MessageBox.Show(this,ex.Message,"截图快捷键");}};
+   AddText(translate,"框选后先自动复制图片；需要翻译时点击截图工具栏“翻译”。",22,795,680,44,false);
+   AddText(translate,"本地词典优先",22,855,550,28,true);
+   AddText(translate,LocalDictionary.Description()+"\r\n完整命中单词或短语时本地返回，未命中再请求 AI。\r\n多义词可点“AI精译”；词库随版本更新，不采集个人词汇。",22,895,680,100,false);
    var privacy=Page(tabs,"隐私");
    pause.Text="暂停 AI 联网翻译，保留本地词典查询";pause.Checked=config.PauseTranslation;pause.SetBounds(22,25,550,35);privacy.Controls.Add(pause);
-   AddText(privacy,"强制密码保护不可关闭；敏感凭据不发送、不缓存。\r\n不上传用户词库或缓存，不收集输入内容用于改进或训练。\r\n缓存仅在内存，退出即清空；截图识别不生成临时文件。\r\nAPI 密钥加密保存在本机。联网仅发送本次普通待译文字。\r\n第三方 API 的留存规则由其服务商决定。",22,70,680,110,false);
+   AddText(privacy,"强制密码保护不可关闭；敏感凭据不发送、不缓存。\r\n不上传用户词库或缓存，不收集输入内容用于改进或训练。\r\n缓存仅在内存，退出即清空；截图识别不生成临时文件。\r\nAPI 密钥加密保存在本机。AI 翻译仅发送本次普通待译文字。\r\n第三方 API 的留存规则由其服务商决定。",22,70,680,110,false);
    Button(privacy,"清空翻译缓存",22,195,170).Click+=delegate {translator.Clear();MessageBox.Show(this,"翻译缓存已清空。");};
    AddText(privacy,"版本与更新",22,250,550,30,true);
    AddText(privacy,"当前版本："+Updates.CurrentText,22,290,550,25,false);
-   AddText(privacy,"更新源：言渡官方 GitHub 仓库",22,327,550,26,false);
+   AddText(privacy,"更新源：言渡官方 GitHub 仓库（每日自动检查）",22,327,550,26,false);
    AddText(privacy,"手动检查正式版本。下载后校验文件，确认后安装，保留原路径和 API 配置。",22,364,680,42,false);
    var checkUpdate=Button(privacy,"检查更新",22,420,135);
    var downloadUpdate=Button(privacy,"下载并更新",171,420,145);downloadUpdate.Enabled=false;
@@ -112,14 +116,15 @@ namespace PersonalIme {
    Shown+=delegate{if(!config.Ready)((Button)nav.Controls[2]).PerformClick();};
    var footer=new FlowLayoutPanel{Dock=DockStyle.Fill,FlowDirection=FlowDirection.RightToLeft,Padding=new Padding(0,14,0,0)};layout.Controls.Add(footer,0,3);
    Button(footer,"保存设置",0,0,150).Click+=delegate {try {
-    Settings value=Read();config.Endpoint=value.Endpoint;config.Model=value.Model;config.ProtectedKey=value.ProtectedKey;config.Voice=value.Voice;config.SpeechRate=value.SpeechRate;config.SpeechVolume=value.SpeechVolume;config.PauseTranslation=value.PauseTranslation;config.SelectionTranslation=value.SelectionTranslation;
+    Settings value=Read();config.Endpoint=value.Endpoint;config.Model=value.Model;config.ProtectedKey=value.ProtectedKey;config.Voice=value.Voice;config.SpeechRate=value.SpeechRate;config.SpeechVolume=value.SpeechVolume;config.PauseTranslation=value.PauseTranslation;config.SelectionTranslation=value.SelectionTranslation;config.ScreenshotHotkey=value.ScreenshotHotkey;
     config.Save();saved();Close();
    }catch(Exception ex){MessageBox.Show(this,ex.Message,"请检查设置");}};
    FormClosed+=delegate{lifetime.Cancel();updates.Dispose();synth.SpeakAsyncCancelAll();synth.Dispose();};
   }
   Settings Read() {
    Settings.ChatUri(endpoint.Text);if(String.IsNullOrWhiteSpace(model.Text))throw new ArgumentException("请填写模型名称。");
-   var value=new Settings {Endpoint=endpoint.Text.Trim().TrimEnd('/'),Model=model.Text.Trim(),Voice=voice.SelectedIndex>0?(string)voice.SelectedItem:"",SpeechRate=rate.Value,SpeechVolume=volume.Value,PauseTranslation=pause.Checked,SelectionTranslation=selectionTranslation.Checked};value.SetKey(key.Text);return value;
+   string shortcut=CaptureShortcut.Normalize(captureKey.Text);if(shortcut!=CaptureShortcut.Normalize(config.ScreenshotHotkey)&&!(CaptureShortcutAvailable!=null?CaptureShortcutAvailable(shortcut):CaptureShortcut.Probe(Handle,shortcut)))throw new ArgumentException("截图快捷键已被占用，请更换。");
+   var value=new Settings {ScreenshotHotkey=shortcut,Endpoint=endpoint.Text.Trim().TrimEnd('/'),Model=model.Text.Trim(),Voice=voice.SelectedIndex>0?(string)voice.SelectedItem:"",SpeechRate=rate.Value,SpeechVolume=volume.Value,PauseTranslation=pause.Checked,SelectionTranslation=selectionTranslation.Checked};value.SetKey(key.Text);return value;
   }
   static Panel Page(Panel tabs,string title){var page=new SoftPanel{Tag=title,Dock=DockStyle.Fill,Visible=false,BackColor=Palette.Surface,ForeColor=Palette.Text};tabs.Controls.Add(page);return page;}
   static void LabelField(Control root,string title,TextBox box,int y){AddText(root,title,22,y,520,25,false);var surface=new SoftPanel{Left=22,Top=y+27,Width=520,Height=43,BackColor=Palette.Background};box.SetBounds(12,9,496,28);box.Font=new Font("Microsoft YaHei UI",11);box.BorderStyle=BorderStyle.None;box.BackColor=Palette.Background;box.ForeColor=Palette.Text;surface.Controls.Add(box);root.Controls.Add(surface);}

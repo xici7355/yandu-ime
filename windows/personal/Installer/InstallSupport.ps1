@@ -1,20 +1,21 @@
-﻿function Get-YanduInstalledPath {
+﻿function Test-YanduInstallation([string]$Path) {
+ if(!$Path){return $false}
+ return ((Test-Path -LiteralPath (Join-Path $Path 'WeaselServer.exe') -PathType Leaf) -and (Test-Path -LiteralPath (Join-Path $Path 'PersonalTranslateIme.exe') -PathType Leaf) -and (Test-Path -LiteralPath (Join-Path $Path 'Uninstall.exe') -PathType Leaf))
+}
+function Get-YanduInstalledPath([switch]$IncludeStale) {
  foreach($view in @([Microsoft.Win32.RegistryView]::Registry64,[Microsoft.Win32.RegistryView]::Registry32)){
   $base=[Microsoft.Win32.RegistryKey]::OpenBaseKey([Microsoft.Win32.RegistryHive]::LocalMachine,$view)
   try{
    $key=$base.OpenSubKey('Software\Microsoft\Windows\CurrentVersion\Uninstall\PersonalTranslateIme')
-   if($key){try{$value=[string]$key.GetValue('InstallLocation')}finally{$key.Dispose()};if($value){return [IO.Path]::GetFullPath($value).TrimEnd('\')}}
+   if($key){try{$value=[string]$key.GetValue('InstallLocation')}finally{$key.Dispose()};if($value -and ($IncludeStale -or (Test-YanduInstallation $value))){return [IO.Path]::GetFullPath($value).TrimEnd('\')}}
    $key=$base.OpenSubKey('Software\PersonalTranslateIme\Weasel')
-   if($key){try{$value=[string]$key.GetValue('WeaselRoot')}finally{$key.Dispose()};if($value){return [IO.Path]::GetFullPath($value).TrimEnd('\')}}
+   if($key){try{$value=[string]$key.GetValue('WeaselRoot')}finally{$key.Dispose()};if($value -and ($IncludeStale -or (Test-YanduInstallation $value))){return [IO.Path]::GetFullPath($value).TrimEnd('\')}}
   }finally{$base.Dispose()}
  }
  return $null
 }
 function Resolve-YanduInstallPath([string]$Requested,[string]$Installed) {
- if($Installed){
-  if($Requested -and [IO.Path]::GetFullPath($Requested).TrimEnd('\') -ine $Installed.TrimEnd('\')){throw '升级必须沿用原安装位置；如需迁移，请先卸载后重新安装。'}
-  $Requested=$Installed
- }
+ if(!$Requested -and $Installed){$Requested=$Installed}
  if(!$Requested){$Requested=Join-Path $env:ProgramFiles 'PersonalTranslateIme'}
  if($Requested -notmatch '^[A-Za-z]:\\' -or $Requested.IndexOfAny([char[]]'"<>|*?') -ge 0 -or $Requested.Substring(2).Contains(':')){throw '请选择本机磁盘中的有效完整路径。'}
  $target=[IO.Path]::GetFullPath($Requested).TrimEnd('\')
@@ -29,7 +30,7 @@ function Resolve-YanduInstallPath([string]$Requested,[string]$Installed) {
   if(Test-Path -LiteralPath $ancestor){$item=Get-Item -LiteralPath $ancestor -Force;if(!$item.PSIsContainer -or ($item.Attributes -band [IO.FileAttributes]::ReparsePoint)){throw '安装位置不能是文件、符号链接或目录联接。'}}
   $parent=Split-Path $ancestor -Parent;if($parent -eq $ancestor){break};$ancestor=$parent
  }
- if(!$Installed -and (Test-Path -LiteralPath $target) -and @(Get-ChildItem -LiteralPath $target -Force).Count){throw '请选择空文件夹，避免覆盖其他程序或文件。'}
+ if(($target -ine $Installed) -and (Test-Path -LiteralPath $target) -and @(Get-ChildItem -LiteralPath $target -Force).Count){throw '请选择空文件夹，避免覆盖其他程序或文件。'}
  return $target
 }
 function Copy-YanduPayload([string]$Source,[string]$Destination) {
@@ -39,7 +40,7 @@ function Copy-YanduPayload([string]$Source,[string]$Destination) {
  $copied=0L
  foreach($item in $items){
   $relative=$item.FullName.Substring($Source.TrimEnd('\').Length+1)
-  if($relative -in @('weasel.dll','weaselx64.dll')){$relative=[IO.Path]::GetFileNameWithoutExtension($relative)+'.2.0.0.dll'}
+  if($relative -in @('weasel.dll','weaselx64.dll')){$relative=[IO.Path]::GetFileNameWithoutExtension($relative)+'.2.1.0.dll'}
   $target=Join-Path $Destination $relative
   New-Item -ItemType Directory -Force (Split-Path $target -Parent) | Out-Null
   if((Test-Path -LiteralPath $target) -and (Get-FileHash -LiteralPath $item.FullName).Hash -eq (Get-FileHash -LiteralPath $target).Hash){$copied+=$item.Length}

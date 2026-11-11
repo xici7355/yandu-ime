@@ -109,7 +109,7 @@ namespace PersonalIme {
   readonly SpeechSynthesizer speech=new SpeechSynthesizer();readonly NotifyIcon tray=new NotifyIcon();
   readonly System.Windows.Forms.Timer debounce=new System.Windows.Forms.Timer(),watch=new System.Windows.Forms.Timer();
   TranslationJob job;SettingsForm settingsWindow;Snapshot snapshot;
-  SelectionMonitor selectionMonitor;bool capturing;Task<SelectedText> selectionRead;
+  string registeredCaptureKey="";Action refreshCaptureMenu;AutomaticUpdates automaticUpdates;SelectionMonitor selectionMonitor;bool capturing;Task<SelectedText> selectionRead;
   ScreenTranslation screenTranslation;
   bool captureHotkey;
   IntPtr previewForeground,currentTarget,pendingTarget;DateTime lastSignal,pendingUntil;
@@ -156,11 +156,14 @@ namespace PersonalIme {
    speech.SpeakCompleted+=delegate{if(!cleaned&&!IsDisposed&&IsHandleCreated)try{BeginInvoke((Action)delegate{if(!cleaned){speaking=false;panel.Speaker.Text="🔊";}});}catch(InvalidOperationException){}};
    debounce.Interval=400;debounce.Tick+=async delegate{debounce.Stop();await TranslateCurrent();};
    watch.Interval=150;watch.Tick+=delegate{CheckContext();};watch.Start();
-   var menu=new ContextMenuStrip();menu.Items.Add("言渡设置",null,delegate{OpenSettings();});menu.Items.Add("截屏翻译",null,delegate{BeginInvoke((Action)CaptureTranslation);});menu.Items.Add("划词翻译",null,delegate{config.SelectionTranslation=!config.SelectionTranslation;config.Save();});menu.Opening+=delegate{((ToolStripMenuItem)menu.Items[2]).Checked=config.SelectionTranslation;};menu.Items.Add("清空翻译缓存",null,delegate{translator.Clear();});menu.Items.Add("退出言渡助手",null,delegate{Close();});
+   var menu=new ContextMenuStrip();menu.Items.Add("言渡设置",null,delegate{OpenSettings();});menu.Items.Add("截图／截图翻译",null,delegate{BeginInvoke((Action)CaptureTranslation);});menu.Items.Add("划词翻译",null,delegate{config.SelectionTranslation=!config.SelectionTranslation;config.Save();});menu.Opening+=delegate{((ToolStripMenuItem)menu.Items[2]).Checked=config.SelectionTranslation;};menu.Items.Add("清空翻译缓存",null,delegate{translator.Clear();});menu.Items.Add("退出言渡助手",null,delegate{Close();});
    tray.Icon=Brand.Icon;tray.Text="言渡输入法 · 右键打开言渡设置";tray.ContextMenuStrip=menu;tray.Visible=!testing;tray.DoubleClick+=delegate{OpenSettings();};
    Shown+=delegate{Hide();if(!config.Ready)OpenSettings();};
-   if(!testing){selectionMonitor=new SelectionMonitor(this,()=>config.SelectionTranslation&&!config.PauseTranslation&&!capturing,ShowSelectedTranslation);captureHotkey=Native.RegisterHotKey(Handle,1101,0x4003,(uint)Keys.Z);menu.Items[1].Text=captureHotkey?"截屏翻译（Ctrl＋Alt＋Z）":"截屏翻译（快捷键已被占用）";if(!captureHotkey)Shown+=delegate{tray.ShowBalloonTip(6000,"言渡截屏翻译","Ctrl＋Alt＋Z 已被其他软件占用，可右键言渡图标使用截屏翻译。",ToolTipIcon.Info);};}
+   if(!testing){automaticUpdates=new AutomaticUpdates();Shown+=delegate{automaticUpdates.Start();};selectionMonitor=new SelectionMonitor(this,()=>config.SelectionTranslation&&!config.PauseTranslation&&!capturing,ShowSelectedTranslation);refreshCaptureMenu=delegate{menu.Items[1].Text="截图／截图翻译（"+(captureHotkey?registeredCaptureKey:String.IsNullOrEmpty(config.ScreenshotHotkey)?"未设置快捷键":"快捷键被占用")+"）";};ConfigureCaptureKey();}
+
   }
+  void ConfigureCaptureKey(){if(captureHotkey){Native.UnregisterHotKey(Handle,1101);captureHotkey=false;}registeredCaptureKey="";try{var key=CaptureShortcut.Parse(config.ScreenshotHotkey);if(key!=null){captureHotkey=Native.RegisterHotKey(Handle,1101,key.Modifiers,key.Key);if(captureHotkey)registeredCaptureKey=key.Text;else tray.ShowBalloonTip(6000,"言渡截图","截图快捷键已被占用，可在翻译设置中更换，或从言渡菜单截图。",ToolTipIcon.Info);}}catch{}if(refreshCaptureMenu!=null)refreshCaptureMenu();}
+  bool CaptureKeyAvailable(string value){return captureHotkey&&value==registeredCaptureKey||CaptureShortcut.Probe(Handle,value);}
   void SaveComparison(bool value){config.CaptureComparison=value;try{config.Save();}catch{}}
   async void ShowSelectedTranslation(SelectedText selected){
    if(cleaned||capturing||(selectionRead!=null&&!selectionRead.IsCompleted))return;capturing=true;ResetTranslation();if(selectionMonitor!=null)selectionMonitor.Hide();
@@ -177,13 +180,13 @@ namespace PersonalIme {
   }
   async void CaptureTranslation(){if(capturing)return;capturing=true;ResetTranslation();if(selectionMonitor!=null)selectionMonitor.Hide();if(screenTranslation!=null&&!screenTranslation.IsDisposed)screenTranslation.Hide();
    try{await Task.Delay(160);if(cleaned||IsDisposed)return;if(await PrivacyPolicy.ProtectedFocus()){MessageBox.Show("密码框强制保护：当前处于密码输入或无法确认安全状态，未开始截屏翻译。请先切换到普通文字。","言渡隐私保护",MessageBoxButtons.OK,MessageBoxIcon.Information);return;}if(cleaned||IsDisposed)return;var bounds=SystemInformation.VirtualScreen;using(var bitmap=CaptureOverlay.CaptureDesktop(bounds))using(var overlay=new CaptureOverlay(bitmap,bounds)){
-     if(overlay.ShowDialog()==DialogResult.OK){overlay.Captured.Dispose();if(screenTranslation!=null&&!screenTranslation.IsDisposed)screenTranslation.Close();screenTranslation=new ScreenTranslation(config,translator,new Bitmap(bitmap),bounds,overlay.ScreenRegion,SaveComparison);screenTranslation.Show();screenTranslation.Activate();}
+     if(overlay.ShowDialog()==DialogResult.OK){if(screenTranslation!=null&&!screenTranslation.IsDisposed)screenTranslation.Close();screenTranslation=new ScreenTranslation(config,translator,new Bitmap(bitmap),bounds,overlay.ScreenRegion,SaveComparison,null,null,true,true);overlay.Captured.Dispose();screenTranslation.Show();screenTranslation.Activate();}
      else{if(screenTranslation!=null&&!screenTranslation.IsDisposed)screenTranslation.Show();}
     }
    }catch{MessageBox.Show("无法截取屏幕，请退出受保护桌面后重试。","言渡截屏翻译",MessageBoxButtons.OK,MessageBoxIcon.Information);}
    finally{capturing=false;}
   }
-  void OpenSettings(){if(settingsWindow!=null&&!settingsWindow.IsDisposed){settingsWindow.WindowState=FormWindowState.Normal;settingsWindow.Show();settingsWindow.BringToFront();settingsWindow.Activate();return;}ResetTranslation();settingsWindow=new SettingsForm(config,translator,delegate{translator.Clear();ResetTranslation();});settingsWindow.ScreenTranslationRequested+=CaptureTranslation;settingsWindow.Show();settingsWindow.BringToFront();settingsWindow.Activate();}
+  void OpenSettings(){if(settingsWindow!=null&&!settingsWindow.IsDisposed){settingsWindow.WindowState=FormWindowState.Normal;settingsWindow.Show();settingsWindow.BringToFront();settingsWindow.Activate();return;}ResetTranslation();settingsWindow=new SettingsForm(config,translator,delegate{translator.Clear();ResetTranslation();ConfigureCaptureKey();});settingsWindow.CaptureShortcutAvailable=CaptureKeyAvailable;settingsWindow.ScreenTranslationRequested+=CaptureTranslation;settingsWindow.Show();settingsWindow.BringToFront();settingsWindow.Activate();}
   protected override void WndProc(ref Message message){
    if(message.Msg==Native.WM_HOTKEY&&message.WParam.ToInt32()==1101){BeginInvoke((Action)CaptureTranslation);return;}
    if(message.Msg==0x8000+279){ExportDiagnostic();message.Result=new IntPtr(1);return;}
@@ -308,7 +311,7 @@ namespace PersonalIme {
   void CancelRequest(){var old=job;job=null;if(old!=null)old.Cancel.Cancel();}
   void ResetTranslation(){ResetTranslationReason("context_cleared");}
   void ResetTranslationReason(string reason){wechatState=null;wechatRead=null;wechatClearPending=false;if(currentTarget!=IntPtr.Zero)Note(reason);debounce.Stop();CancelRequest();snapshot=null;currentTarget=previewForeground=IntPtr.Zero;translated=translatedSource=translationOrigin="";failed=composing=applying=false;undoWindow=IntPtr.Zero;undoSource=undoTarget="";panel.Original.Text=panel.Translation.Text=panel.Hint.Text="";panel.UndoAvailable=false;panel.Speaker.Visible=false;panel.Hide();StopSpeech();}
-  void Cleanup(){if(cleaned)return;cleaned=true;if(captureHotkey){Native.UnregisterHotKey(Handle,1101);captureHotkey=false;}if(selectionMonitor!=null)selectionMonitor.Dispose();if(screenTranslation!=null&&!screenTranslation.IsDisposed)screenTranslation.Close();watch.Dispose();debounce.Dispose();CancelRequest();tray.Visible=false;tray.Dispose();speech.SpeakAsyncCancelAll();speech.Dispose();panel.Dispose();translator.Dispose();}
+  void Cleanup(){if(cleaned)return;cleaned=true;if(automaticUpdates!=null)automaticUpdates.Dispose();if(captureHotkey){Native.UnregisterHotKey(Handle,1101);captureHotkey=false;}if(selectionMonitor!=null)selectionMonitor.Dispose();if(screenTranslation!=null&&!screenTranslation.IsDisposed)screenTranslation.Close();watch.Dispose();debounce.Dispose();CancelRequest();tray.Visible=false;tray.Dispose();speech.SpeakAsyncCancelAll();speech.Dispose();panel.Dispose();translator.Dispose();}
   protected override void OnFormClosed(FormClosedEventArgs e){Cleanup();base.OnFormClosed(e);}
   protected override void Dispose(bool disposing){if(disposing)Cleanup();base.Dispose(disposing);}
  }

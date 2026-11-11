@@ -13,7 +13,7 @@ class UpdateUiTest {
   form.Show();Application.DoEvents();((Button)Find(form,"隐私")).PerformClick();Application.DoEvents();
   Check(Find(form,"当前版本："+Updates.CurrentText)!=null,"privacy shows installed application version");
   Check(Find(form,"GitHub 更新仓库（地址或 用户名/仓库名）")==null,"repository text field removed");
-  Check(Find(form,"更新源：言渡官方 GitHub 仓库")!=null,"official update source shown");
+  Check(Find(form,"更新源：言渡官方 GitHub 仓库（每日自动检查）")!=null,"official update source shown");
   var check=(Button)Find(form,"检查更新");Check(check!=null,"manual check button visible");
   Check(!Find(form,"下载并更新").Enabled,"download disabled until newer release found");
   Check(Updates.OfficialRepository=="xici7355/yandu-ime","repository built into application");

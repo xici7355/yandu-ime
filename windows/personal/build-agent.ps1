@@ -1,4 +1,4 @@
-﻿param([switch]$Test,[switch]$UiTest,[switch]$RaceTest,[switch]$UpdateTest,[switch]$UpdateUiTest,[switch]$ReadingTest,[switch]$ScreenTest,[switch]$SkipCaptureMouseTest,[switch]$DictionaryTest)
+﻿param([switch]$Test,[switch]$UiTest,[switch]$RaceTest,[switch]$UpdateTest,[switch]$UpdateUiTest,[switch]$ReadingTest,[switch]$ScreenTest,[switch]$SkipCaptureMouseTest,[switch]$DictionaryTest,[switch]$LifecycleTest)
 $ErrorActionPreference='Stop'
 $root=Split-Path $PSScriptRoot -Parent
 Set-Location $root
@@ -79,4 +79,12 @@ if($DictionaryTest){
  if($LASTEXITCODE){throw 'Dictionary privacy tests compilation failed'}
  & "$out/DictionaryPrivacyTests.exe"
  if($LASTEXITCODE){throw 'Dictionary privacy tests failed'}
+}
+
+if($LifecycleTest){
+ $testSources=Get-ChildItem "$PSScriptRoot/Tests/CoreTests.cs","$PSScriptRoot/Tests/LifecycleUiTests.cs" | ForEach-Object FullName
+ & $compiler /nologo /utf8output /target:exe /main:LifecycleUiTests "/win32manifest:$manifest" "/out:$out/LifecycleUiTests.exe" @references @sources @testSources
+ if($LASTEXITCODE){throw 'Lifecycle UI test compilation failed'}
+ & "$out/LifecycleUiTests.exe"
+ if($LASTEXITCODE){throw 'Lifecycle UI tests failed'}
 }

@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.IO;
 using System.Text;
 using System.Security.Cryptography;
@@ -10,6 +10,7 @@ namespace PersonalIme {
   public string Model = "deepseek-chat";
   public string ProtectedKey = "";
   public string Voice = "";
+  public string ScreenshotHotkey = "Ctrl+Alt+Z";
   public int SpeechRate = -1;
   public int SpeechVolume = 90;
   public bool PauseTranslation = false;

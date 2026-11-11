@@ -37,6 +37,7 @@ Copy-Item "$root/deps/rime-prelude/LICENSE" "$payload/licenses/默认配置-LGPL
 Copy-Item "$root/deps/boost_1_84_0/LICENSE_1_0.txt" "$payload/licenses/Boost-BSL-1.0.txt" -Force
 Copy-Item "$PSScriptRoot/使用说明.txt" $payload -Force
 [IO.File]::WriteAllText((Join-Path $stage 'InstallSupport.ps1'),(Get-Content "$PSScriptRoot/Installer/InstallSupport.ps1" -Raw),(New-Object Text.UTF8Encoding($true)))
+Copy-Item "$PSScriptRoot/Installer/Maintenance.ps1" "$stage/Maintenance.ps1" -Force
 $installerText=Get-Content "$PSScriptRoot/Installer/Install.ps1" -Raw
 [IO.File]::WriteAllText((Join-Path $stage 'Install.ps1'),$installerText,(New-Object Text.UTF8Encoding($true)))
 @'
@@ -49,9 +50,9 @@ $compiler=Join-Path $env:WINDIR 'Microsoft.NET/Framework64/v4.0.30319/csc.exe'
 $manifest=(Get-Content "$PSScriptRoot/Agent/app.manifest" -Raw).Replace('level="asInvoker"','level="requireAdministrator"').Replace('name="PersonalTranslateIme.Agent"','name="PersonalTranslateIme.Setup"')
 $manifestPath=Join-Path $PSScriptRoot 'bin/setup.manifest'
 [IO.File]::WriteAllText($manifestPath,$manifest)
-$output=Join-Path $dist '言渡输入法-Windows-x64-2.0.0.exe'
+$output=Join-Path $dist '言渡输入法-Windows-x64-2.1.0.exe'
 $uninstallSource=(Resolve-Path "$PSScriptRoot/Installer/Uninstall.cs").Path
-& $compiler /nologo /utf8output /target:winexe /platform:x64 /optimize+ "/win32manifest:$manifestPath" "/win32icon:$PSScriptRoot/Assets/yandu.ico" "/out:$payload/Uninstall.exe" /r:System.Windows.Forms.dll $uninstallSource
+& $compiler /nologo /utf8output /target:winexe /platform:x64 /optimize+ "/win32manifest:$PSScriptRoot/Agent/app.manifest" "/win32icon:$PSScriptRoot/Assets/yandu.ico" "/out:$payload/Uninstall.exe" /r:System.Windows.Forms.dll /r:System.Drawing.dll "/resource:$PSScriptRoot/Assets/yandu.png,yandu.png" "/resource:$PSScriptRoot/Assets/yandu.ico,yandu.ico" $uninstallSource (Join-Path $PSScriptRoot 'Agent/Brand.cs') (Join-Path $PSScriptRoot 'Agent/Palette.cs')
 if($LASTEXITCODE){throw '卸载程序编译失败'}
 # Include the uninstaller in the payload assembled above.
 if(Test-Path $archive){Remove-Item -LiteralPath $archive}
