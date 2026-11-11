@@ -6,7 +6,7 @@
 
 运行 python tools/check_publication.py，审查实际暂存区及附件。排除个人 API 配置、签名私钥、密码、用户词库和原始日志；不要上传整个开发目录或密钥恢复备份。
 
-更新两端应用版本。Windows 同步 Agent/Installer 的 AssemblyInfo、安装显示版本及原生 DLL 文件名；Android 同步 versionName 和递增的 baseVersionCode。ARM64 当前 versionCode 1002、x86_64 1004，后续必须增加。
+按实际发布平台更新应用版本，单端发布不能重标另一端旧安装包。Windows 同步 Agent/Installer 的 AssemblyInfo、安装显示版本及原生 DLL 文件名；Android 同步 versionName 和递增的 baseVersionCode。ARM64 当前 versionCode 1002、x86_64 1004，后续必须增加。
 
 保留 Windows 的 CLSID/Profile GUID、Android 的 applicationId/后缀和签名，否则无法覆盖现有安装。内部构建变体名与产品名称不同，不要为改名擅自换包名或私钥。
 
@@ -30,3 +30,7 @@ Android 还识别 Yandu-Android-armv7.apk / Yandu-Android-x86.apk，但未构建
 正式附件一经发布不要用不同内容覆盖同一版本；修复应递增版本。V1.0 验证并发布后，清除旧研发 Releases 及其远端标签，本地备份保留。
 
 Android 安装包签名在维护者本地完成，私钥不公开。仓库没有自动发布工作流，也不需要把个人 GitHub 令牌写入源码。两端更新仓库均内置，无需用户填写。
+
+## Windows V2.0
+
+v2.0.0 仅包含 Windows 2.0.0 安装器及源码。Android 1.0.0 仍从 v1.0.0 获取，保留历史正式发布。Windows 客户端通过固定的 Yandu-Setup-x64.exe 附件识别更新；安卓不得将缺少对应 APK 的发布当作可安装更新。

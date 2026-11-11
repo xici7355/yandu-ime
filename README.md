@@ -1,30 +1,76 @@
 <p align="center"><img src="assets/yandu.png" width="104" alt="言渡输入法"></p>
 
-# 言渡输入法 · V1.0
+# 言渡输入法
 
 **落笔此岸，言达彼岸。**
 
 言渡将中文输入、AI 翻译和译文朗读放在同一条输入流程中。输入中文后查看译文，点击替换对应原文，也可以继续保留中文。未配置 API 或网络不可用时，仍能正常输入。
 
-V1.0 是首个正式版本，Android 与 Windows 的应用版本均为 **1.0.0**。此前研发快照不计入正式版本。
+当前正式版本：**Windows V2.0（2.0.0）**，**Android V1.0（1.0.0）**。Windows V2.0 基于已验证的 1.2.1 交付定版；此次不更新或重标安卓版。
 
-## Windows V1.2.1 本地试用包
+## Windows V2.0 升级内容
 
-Windows 新增 CC-CEDICT 本地中英双向查询，完整命中词语或固定短语时不调用 API；句子未命中时沿用已配置的 API。词典不是离线整句翻译模型。划词与截屏共用原位覆盖／对照界面。
+### 完整原文与翻译语义
 
-**密码保护与敏感凭据拦截强制启用，不能关闭。** 不上传个人词库、学习记录或翻译缓存，不收集输入内容用于改进或训练。联网翻译仍会发送本次普通待译文字，第三方服务商的留存规则另行适用。保护范围和限制见 [隐私说明](docs/PRIVACY.md)。
+- 修复输入宿主重建组合范围后丢掉句首、只翻译最近一段文字的问题。当前行末提交时重新确认本行原文，保留“我还在”等前缀，不跨换行读取为同一句。
+- RichEdit 避免把尚未结束的拼音缓冲当作已提交中文。微信兼容读取在前台、控件身份和末尾光标校验后，用完整输入框内容接管对应尾段。
+- 请求要求保留主语、否定和时态／体含义，陈述句中的间接提问保持陈述语气；词典释义只作上下文参考。
+- 继续核对原文范围和光标后再替换，原位点击同一译文区域可撤回；旧请求不能覆盖新句子的结果。
 
-本次修复原文句首漏字及陈述语气丢失，验证记录见 [Windows V1.2.1](docs/WINDOWS-V1.2.1.md)；词典使用见 [Windows V1.2](docs/WINDOWS-V1.2.md)。尚未发布到 GitHub Releases；下方链接仍指向正式 V1.0，Android 保持 V1.0。
+固定句“我还在测试这个版本使用起来怎么样”使用已配置 API 实测返回：
+
+> I am still testing how well this version works.
+
+这是一条实际接口结果，程序没有硬编码此句译文；不同模型和句子仍可能有误译。
+
+### 内置 CC-CEDICT，本地优先
+
+- 安装包内含 **125,403 条原始词条**的公开快照（2026-11-10），中英双向压缩索引约 **4.1 MiB**，无需首次联网下载。
+- 完整词语或固定短语命中后显示“本地词典”，不调用 API。可离线尝试“输入法”“一路平安”和英文“input method”。英文反查来自释义索引，覆盖范围不等同于独立英文词典。
+- 未命中的整句不拆成词义拼接；已配置 API 时由模型翻译，可附相关公开释义辅助理解。未配置接口时仍可查本地词语，并正常输入。
+- 阅读结果可点“AI 精译”主动请求模型；结果区区分“本地词典”“内存缓存”和“AI翻译”。输入翻译仍以中文译英文为主。
+- 重复句子复用内存缓存；只增删末尾标点时本地处理，减少重复请求。中文原文标点保留，译文末尾的“，”和“。”转换为英文标点。
+- 词典随应用版本更新，不后台定时联网更新，不使用个人词库或查询记录改进公开数据。改编数据按 **CC BY-SA 4.0** 分发，包含来源、署名和完整许可。
+
+词典适合词语与固定短语，**没有内置离线整句翻译模型**。多义词和上下文表达仍可能需要 API。
+
+### 划词与截屏翻译
+
+- 鼠标选中文字后出现小“译”按钮，点击才翻译；通过应用公开的选区读取，不读取剪贴板或模拟复制。部分软件未公开选区时可使用截屏。
+- **Ctrl＋Alt＋Z** 启动截屏，松开鼠标固定区域，Esc／右键取消。中英 OCR 在本机完成，图片不上传；快捷键冲突时提示并保留菜单入口。
+- 两种阅读功能共用原位界面，不再打开独立居中的结果窗口。关闭“对照”覆盖原文区域；打开后保留原图，在附近显示完整译文，超长可滚动。
+- 中文原文译英文，英文原文译中文；混合内容按主要语言判断。提供复制原文、复制译文和重试，阅读结果不添加朗读。
+- 应用没有提供可靠的划词位置时，只允许对照显示，避免覆盖错误区域。
+
+### 强制隐私保护
+
+**密码框保护与典型敏感内容拦截没有关闭开关，“AI 精译”也不能绕过。**
+
+- 系统标记为密码或可识别的凭据编辑框自动保护；检查典型密钥、带凭据链接及常见个人敏感信息格式，在查询、请求和缓存前拦截。
+- **不上传个人词库、学习记录或翻译缓存，不收集输入内容用于改进或训练。** 输入词频留在本机，翻译缓存最多 128 项，仅在内存中，退出清空。
+- 截图 OCR 使用内存和本机进程管道，不生成新的临时图片／文字文件；敏感结果清除并遮挡选区，禁止复制和重试。
+- 联网翻译仍发送本次普通待译文字和相关公开词典参考。第三方 API 的留存和训练规则由服务商决定；要让普通待译文字也不离开本机，可使用兼容接口的本机模型。
+
+保护依赖控件公开的信息及典型敏感格式，不能保证识别全部未标注字段或任意私人叙述。完整边界、旧版临时文件和敏感文件提交规则见 [隐私说明](docs/PRIVACY.md)。以上新增保护与词典说明适用于 Windows V2.0，不表示 Android V1.0 已新增相同实现。
+
+### 界面、安装与验证
+
+- 保留四分类设置、系统深浅色与荧光绿点缀；任务栏右键和开始菜单均可打开设置。译文在原卡片展开，小喇叭朗读／停止。
+- 安装器显示真实文件进度，首次可选目录；升级沿用旧位置、API 配置和本地输入词频。已加载旧模块的软件需重新打开。
+- 真实 32／64 位 RichEdit 与 WPF 输入、隔离 Chrome 的普通／富文本框验证通过，覆盖完整原文请求、连续输入、句首补字、替换和撤回；固定句已使用真实 API 验证。
+- 词典、隐私拦截、更新校验，以及安装器模拟流程均有回归检查。此次定版没有执行新的系统覆盖安装，也未验证所有 Windows 软件或全新电脑无缓存构建。
+
+[V2.0 版本说明](docs/WINDOWS-V2.0.md) · [原文范围修复验证](docs/WINDOWS-V1.2.1.md) · [词典说明](docs/WINDOWS-V1.2.md)
 
 ## 下载与安装
 
 | 平台 | 安装包 | 环境 |
 | --- | --- | --- |
-| Windows | [Yandu-Setup-x64.exe](https://github.com/xici7355/yandu-ime/releases/download/v1.0.0/Yandu-Setup-x64.exe) | Windows 10/11 x64，本机验收为 Windows 11 |
-| Android ARM64 | [Yandu-Android-arm64.apk](https://github.com/xici7355/yandu-ime/releases/download/v1.0.0/Yandu-Android-arm64.apk) | Android 6.0+，常见 ARM64 手机 |
-| Android x86_64 | [Yandu-Android-x86_64.apk](https://github.com/xici7355/yandu-ime/releases/download/v1.0.0/Yandu-Android-x86_64.apk) | Android 6.0+，x86_64 设备或模拟器 |
+| Windows V2.0 | [Yandu-Setup-x64.exe](https://github.com/xici7355/yandu-ime/releases/download/v2.0.0/Yandu-Setup-x64.exe) | Windows 10/11 x64，本机验收为 Windows 11 |
+| Android V1.0 ARM64 | [Yandu-Android-arm64.apk](https://github.com/xici7355/yandu-ime/releases/download/v1.0.0/Yandu-Android-arm64.apk) | Android 6.0+，常见 ARM64 手机 |
+| Android V1.0 x86_64 | [Yandu-Android-x86_64.apk](https://github.com/xici7355/yandu-ime/releases/download/v1.0.0/Yandu-Android-x86_64.apk) | Android 6.0+，x86_64 设备或模拟器 |
 
-[正式发布页与 SHA-256](https://github.com/xici7355/yandu-ime/releases/tag/v1.0.0) · [Windows 使用说明](docs/INSTALL-WINDOWS.md) · [Android 使用说明](docs/INSTALL-ANDROID.md) · [版本介绍](CHANGELOG.md)
+[Windows V2.0 发布页与 SHA-256](https://github.com/xici7355/yandu-ime/releases/tag/v2.0.0) · [Android V1.0 发布页](https://github.com/xici7355/yandu-ime/releases/tag/v1.0.0) · [Windows 使用说明](docs/INSTALL-WINDOWS.md) · [Android 使用说明](docs/INSTALL-ANDROID.md) · [版本介绍](CHANGELOG.md)
 
 两端统一使用“言渡输入法”名称和图标，设置按键盘、输入、翻译、隐私四类组织，采用跟随系统深浅色的中性色与荧光绿点缀。
 
@@ -50,7 +96,7 @@ Windows 新增 CC-CEDICT 本地中英双向查询，完整命中词语或固定�
 
 1. 安装并切换到言渡，在应用“翻译”页分别填写接口地址、模型和密钥。`sk-` 开头的内容填入密钥栏。
 2. 点击“验证连接”。接口调用可能按服务商规则收费。
-3. 输入中文后查看译文，点击替换；小喇叭用于朗读。未配置接口时作为普通输入法使用。
+3. 输入中文后查看译文，点击替换；小喇叭用于朗读。未配置接口时仍能普通输入；Windows V2.0 还能查询内置词典。
 
 Windows 设置可从任务栏输入法图标右键菜单或开始菜单打开。首次安装可自选目录，升级保留旧路径和 API 配置。
 
@@ -78,6 +124,6 @@ DEPENDENCIES.json  上游提交及固定依赖
 
 ## 验证与许可
 
-本版在发布前验证输入、翻译保护、更新校验及覆盖升级。具体结果见 [验证记录](docs/PUBLICATION-VERIFICATION.md)，不据此承诺全部系统、设备和应用兼容。
+V1.0 曾验证覆盖升级；Windows V2.0 的原生输入与打包检查另有记录。具体结果见 [验证记录](docs/PUBLICATION-VERIFICATION.md) 与 [V2.0 说明](docs/WINDOWS-V2.0.md)，不据此承诺全部系统、设备和应用兼容。
 
 Android 基于 [Fcitx5 Android](https://github.com/fcitx5-android/fcitx5-android)，Windows 基于 [Rime 小狼毫](https://github.com/rime/weasel)。原版权声明和 LGPL/GPL 许可保留，词库及其他组件按各自许可使用。详见 [许可说明](LICENSE.md) 与 [第三方组件](docs/THIRD-PARTY.md)。

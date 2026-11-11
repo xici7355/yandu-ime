@@ -1,3 +1,5 @@
+> 当前 Windows 正式版为 V2.0（2.0.0），下载 [v2.0.0 安装包](https://github.com/xici7355/yandu-ime/releases/download/v2.0.0/Yandu-Setup-x64.exe)。可覆盖升级；新增词典、阅读翻译与隐私规则见 [V2.0 说明](WINDOWS-V2.0.md)。
+
 # Windows 安装与使用
 
 言渡输入法 V1.0，应用版本 1.0.0。面向 Windows 10/11 x64，本机实际验收环境为 Windows 11。
