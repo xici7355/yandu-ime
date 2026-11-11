@@ -6,6 +6,8 @@
 
 言渡将中文输入、AI 翻译和译文朗读放在同一条输入流程中。输入中文后查看译文，点击替换对应原文，也可以继续保留中文。未配置 API 或网络不可用时，仍能正常输入。
 
+**历史正式版下载：[V1.0（安卓／Windows／源码）](https://github.com/xici7355/yandu-ime/releases/tag/v1.0.0)** · [V1.0 Windows 安装包](https://github.com/xici7355/yandu-ime/releases/download/v1.0.0/Yandu-Setup-x64.exe) · [全部正式版本](https://github.com/xici7355/yandu-ime/releases)
+
 当前正式版本：**Windows V2.0（2.0.0）**，**Android V1.0（1.0.0）**。Windows V2.0 基于已验证的 1.2.1 交付定版；此次不更新或重标安卓版。
 
 ## Windows V2.0 升级内容
